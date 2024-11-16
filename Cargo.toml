@@ -1,0 +1,24 @@
+workspace = { members = ["app"] }
+
+[package]
+name = "fast_transpose"
+version = "0.1.0"
+edition = "2021"
+description = "Fast image and matrix transpose"
+readme = "README.md"
+keywords = ["array", "data", "multidimensional", "row-major"]
+license = "BSD-3-Clause OR Apache-2.0"
+authors = ["Radzivon Bartoshyk"]
+documentation = "https://github.com/awxkee/fast_transpose"
+categories = ["multimedia::images", "algorithms"]
+homepage = "https://github.com/awxkee/fast_transpose"
+repository = "https://github.com/awxkee/fast_transpose"
+exclude = ["*.jpg", "assets/*"]
+
+[dependencies]
+
+[profile.dev.package]
+miniz_oxide.opt-level = 3
+png.opt-level = 3
+flate2.opt-level = 3
+image.opt-level = 3

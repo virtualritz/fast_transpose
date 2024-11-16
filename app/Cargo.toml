@@ -1,0 +1,20 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = {version = "0.25.5"}
+fast_transpose = {path = ".."}
+transpose = "0.2.3"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "plane"
+harness = false
+
+[[bench]]
+name = "rgb"
+harness = false
