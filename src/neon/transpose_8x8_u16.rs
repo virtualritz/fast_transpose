@@ -293,14 +293,8 @@ pub(crate) fn neon_transpose_8x8_u16_intl_4<const FLOP: bool, const FLIP: bool>(
         );
 
         if FLOP {
-            vst4q_u16(
-                &mut dst[0],
-                uint16x8x4_t(r0.0, g0.0, b0.0, a0.0),
-            );
-            vst4q_u16(
-                &mut dst[dst_stride],
-                uint16x8x4_t(r0.1, g0.1, b0.1, a0.1),
-            );
+            vst4q_u16(&mut dst[0], uint16x8x4_t(r0.0, g0.0, b0.0, a0.0));
+            vst4q_u16(&mut dst[dst_stride], uint16x8x4_t(r0.1, g0.1, b0.1, a0.1));
             vst4q_u16(
                 &mut dst[2 * dst_stride],
                 uint16x8x4_t(r0.2, g0.2, b0.2, a0.2),
@@ -350,14 +344,8 @@ pub(crate) fn neon_transpose_8x8_u16_intl_4<const FLOP: bool, const FLIP: bool>(
                 &mut dst[2 * dst_stride],
                 uint16x8x4_t(r1.1, g1.1, b1.1, a1.1),
             );
-            vst4q_u16(
-                &mut dst[dst_stride],
-                uint16x8x4_t(r1.2, g1.2, b1.2, a1.2),
-            );
-            vst4q_u16(
-                &mut dst[0],
-                uint16x8x4_t(r1.3, g1.3, b1.3, a1.3),
-            );
+            vst4q_u16(&mut dst[dst_stride], uint16x8x4_t(r1.2, g1.2, b1.2, a1.2));
+            vst4q_u16(&mut dst[0], uint16x8x4_t(r1.3, g1.3, b1.3, a1.3));
         }
     }
 }
