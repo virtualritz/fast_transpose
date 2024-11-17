@@ -101,23 +101,23 @@ unsafe fn sse_transpose_4x4_f32_impl_1<const FLOP: bool, const FLIP: bool>(
     dst: &mut [f32],
     dst_stride: usize,
 ) {
-    let row0 = _mm_loadu_ps(&src[0]);
-    let row1 = _mm_loadu_ps(&src[src_stride]);
-    let row2 = _mm_loadu_ps(&src[2 * src_stride]);
-    let row3 = _mm_loadu_ps(&src[3 * src_stride]);
+    let row0 = _mm_loadu_ps(src.get_unchecked(0..).as_ptr());
+    let row1 = _mm_loadu_ps(src.get_unchecked(src_stride..).as_ptr());
+    let row2 = _mm_loadu_ps(src.get_unchecked(2 * src_stride..).as_ptr());
+    let row3 = _mm_loadu_ps(src.get_unchecked(3 * src_stride..).as_ptr());
 
     let v0 = sse_transpose_4x4_impl::<FLIP>((row0, row1, row2, row3));
 
     if FLOP {
-        _mm_storeu_ps(&mut dst[3 * dst_stride], v0.0);
-        _mm_storeu_ps(&mut dst[2 * dst_stride], v0.1);
-        _mm_storeu_ps(&mut dst[dst_stride], v0.2);
-        _mm_storeu_ps(&mut dst[0], v0.3);
+        _mm_storeu_ps(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), v0.0);
+        _mm_storeu_ps(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), v0.1);
+        _mm_storeu_ps(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.2);
+        _mm_storeu_ps(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.3);
     } else {
-        _mm_storeu_ps(&mut dst[0], v0.0);
-        _mm_storeu_ps(&mut dst[dst_stride], v0.1);
-        _mm_storeu_ps(&mut dst[2 * dst_stride], v0.2);
-        _mm_storeu_ps(&mut dst[3 * dst_stride], v0.3);
+        _mm_storeu_ps(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.0);
+        _mm_storeu_ps(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.1);
+        _mm_storeu_ps(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), v0.2);
+        _mm_storeu_ps(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), v0.3);
     }
 }
 
@@ -138,24 +138,24 @@ unsafe fn sse_transpose_4x4_f32_impl_2<const FLOP: bool, const FLIP: bool>(
     dst: &mut [f32],
     dst_stride: usize,
 ) {
-    let row0 = _mm_load_deinterleave_la_ps(&src[0..]);
-    let row1 = _mm_load_deinterleave_la_ps(&src[src_stride..]);
-    let row2 = _mm_load_deinterleave_la_ps(&src[2 * src_stride..]);
-    let row3 = _mm_load_deinterleave_la_ps(&src[3 * src_stride..]);
+    let row0 = _mm_load_deinterleave_la_ps(src.get_unchecked(0..));
+    let row1 = _mm_load_deinterleave_la_ps(src.get_unchecked(src_stride..));
+    let row2 = _mm_load_deinterleave_la_ps(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_load_deinterleave_la_ps(src.get_unchecked(3 * src_stride..));
 
     let r = sse_transpose_4x4_impl::<FLIP>((row0.0, row1.0, row2.0, row3.0));
     let g = sse_transpose_4x4_impl::<FLIP>((row0.1, row1.1, row2.1, row3.1));
 
     if FLOP {
-        _mm_store_interleave_la_ps(&mut dst[3 * dst_stride..], (r.0, g.0));
-        _mm_store_interleave_la_ps(&mut dst[2 * dst_stride..], (r.1, g.1));
-        _mm_store_interleave_la_ps(&mut dst[dst_stride..], (r.2, g.2));
-        _mm_store_interleave_la_ps(&mut dst[0..], (r.3, g.3));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(3 * dst_stride..), (r.0, g.0));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(2 * dst_stride..), (r.1, g.1));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(dst_stride..), (r.2, g.2));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(0..), (r.3, g.3));
     } else {
-        _mm_store_interleave_la_ps(&mut dst[0..], (r.0, g.0));
-        _mm_store_interleave_la_ps(&mut dst[dst_stride..], (r.1, g.1));
-        _mm_store_interleave_la_ps(&mut dst[2 * dst_stride..], (r.2, g.2));
-        _mm_store_interleave_la_ps(&mut dst[3 * dst_stride..], (r.3, g.3));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(0..), (r.0, g.0));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(dst_stride..), (r.1, g.1));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(2 * dst_stride..), (r.2, g.2));
+        _mm_store_interleave_la_ps(dst.get_unchecked_mut(3 * dst_stride..), (r.3, g.3));
     }
 }
 
@@ -176,25 +176,25 @@ unsafe fn sse_transpose_4x4_f32_impl_3<const FLOP: bool, const FLIP: bool>(
     dst: &mut [f32],
     dst_stride: usize,
 ) {
-    let row0 = _mm_load_deinterleave_rgb_ps(&src[0..]);
-    let row1 = _mm_load_deinterleave_rgb_ps(&src[src_stride..]);
-    let row2 = _mm_load_deinterleave_rgb_ps(&src[2 * src_stride..]);
-    let row3 = _mm_load_deinterleave_rgb_ps(&src[3 * src_stride..]);
+    let row0 = _mm_load_deinterleave_rgb_ps(src.get_unchecked(0..));
+    let row1 = _mm_load_deinterleave_rgb_ps(src.get_unchecked(src_stride..));
+    let row2 = _mm_load_deinterleave_rgb_ps(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_load_deinterleave_rgb_ps(src.get_unchecked(3 * src_stride..));
 
     let r = sse_transpose_4x4_impl::<FLIP>((row0.0, row1.0, row2.0, row3.0));
     let g = sse_transpose_4x4_impl::<FLIP>((row0.1, row1.1, row2.1, row3.1));
     let b = sse_transpose_4x4_impl::<FLIP>((row0.2, row1.2, row2.2, row3.2));
 
     if FLOP {
-        _mm_store_interleave_rgb_ps(&mut dst[3 * dst_stride..], (r.0, g.0, b.0));
-        _mm_store_interleave_rgb_ps(&mut dst[2 * dst_stride..], (r.1, g.1, b.1));
-        _mm_store_interleave_rgb_ps(&mut dst[dst_stride..], (r.2, g.2, b.2));
-        _mm_store_interleave_rgb_ps(&mut dst[0..], (r.3, g.3, b.3));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(3 * dst_stride..), (r.0, g.0, b.0));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(2 * dst_stride..), (r.1, g.1, b.1));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(dst_stride..), (r.2, g.2, b.2));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(0..), (r.3, g.3, b.3));
     } else {
-        _mm_store_interleave_rgb_ps(&mut dst[0..], (r.0, g.0, b.0));
-        _mm_store_interleave_rgb_ps(&mut dst[dst_stride..], (r.1, g.1, b.1));
-        _mm_store_interleave_rgb_ps(&mut dst[2 * dst_stride..], (r.2, g.2, b.2));
-        _mm_store_interleave_rgb_ps(&mut dst[3 * dst_stride..], (r.3, g.3, b.3));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(0..), (r.0, g.0, b.0));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(dst_stride..), (r.1, g.1, b.1));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(2 * dst_stride..), (r.2, g.2, b.2));
+        _mm_store_interleave_rgb_ps(dst.get_unchecked_mut(3 * dst_stride..), (r.3, g.3, b.3));
     }
 }
 
@@ -215,10 +215,10 @@ unsafe fn sse_transpose_4x4_f32_impl_4<const FLOP: bool, const FLIP: bool>(
     dst: &mut [f32],
     dst_stride: usize,
 ) {
-    let row0 = _mm_load_deinterleave_rgba_ps(&src[0..]);
-    let row1 = _mm_load_deinterleave_rgba_ps(&src[src_stride..]);
-    let row2 = _mm_load_deinterleave_rgba_ps(&src[2 * src_stride..]);
-    let row3 = _mm_load_deinterleave_rgba_ps(&src[3 * src_stride..]);
+    let row0 = _mm_load_deinterleave_rgba_ps(src.get_unchecked(0..));
+    let row1 = _mm_load_deinterleave_rgba_ps(src.get_unchecked(src_stride..));
+    let row2 = _mm_load_deinterleave_rgba_ps(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_load_deinterleave_rgba_ps(src.get_unchecked(3 * src_stride..));
 
     let r = sse_transpose_4x4_impl::<FLIP>((row0.0, row1.0, row2.0, row3.0));
     let g = sse_transpose_4x4_impl::<FLIP>((row0.1, row1.1, row2.1, row3.1));
@@ -226,14 +226,72 @@ unsafe fn sse_transpose_4x4_f32_impl_4<const FLOP: bool, const FLIP: bool>(
     let a = sse_transpose_4x4_impl::<FLIP>((row0.3, row1.3, row2.3, row3.3));
 
     if FLOP {
-        _mm_store_interleave_rgba_ps(&mut dst[3 * dst_stride..], (r.0, g.0, b.0, a.0));
-        _mm_store_interleave_rgba_ps(&mut dst[2 * dst_stride..], (r.1, g.1, b.1, a.1));
-        _mm_store_interleave_rgba_ps(&mut dst[dst_stride..], (r.2, g.2, b.2, a.2));
-        _mm_store_interleave_rgba_ps(&mut dst[0..], (r.3, g.3, b.3, a.3));
+        _mm_store_interleave_rgba_ps(
+            dst.get_unchecked_mut(3 * dst_stride..),
+            (r.0, g.0, b.0, a.0),
+        );
+        _mm_store_interleave_rgba_ps(
+            dst.get_unchecked_mut(2 * dst_stride..),
+            (r.1, g.1, b.1, a.1),
+        );
+        _mm_store_interleave_rgba_ps(dst.get_unchecked_mut(dst_stride..), (r.2, g.2, b.2, a.2));
+        _mm_store_interleave_rgba_ps(dst.get_unchecked_mut(0..), (r.3, g.3, b.3, a.3));
     } else {
-        _mm_store_interleave_rgba_ps(&mut dst[0..], (r.0, g.0, b.0, a.0));
-        _mm_store_interleave_rgba_ps(&mut dst[dst_stride..], (r.1, g.1, b.1, a.1));
-        _mm_store_interleave_rgba_ps(&mut dst[2 * dst_stride..], (r.2, g.2, b.2, a.2));
-        _mm_store_interleave_rgba_ps(&mut dst[3 * dst_stride..], (r.3, g.3, b.3, a.3));
+        _mm_store_interleave_rgba_ps(dst.get_unchecked_mut(0..), (r.0, g.0, b.0, a.0));
+        _mm_store_interleave_rgba_ps(dst.get_unchecked_mut(dst_stride..), (r.1, g.1, b.1, a.1));
+        _mm_store_interleave_rgba_ps(
+            dst.get_unchecked_mut(2 * dst_stride..),
+            (r.2, g.2, b.2, a.2),
+        );
+        _mm_store_interleave_rgba_ps(
+            dst.get_unchecked_mut(3 * dst_stride..),
+            (r.3, g.3, b.3, a.3),
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sse_transpose_4x4_f32() {
+        let mut src: Vec<f32> = vec![0f32; 16];
+        for c in src.iter_mut().enumerate() {
+            *c.1 = c.0 as f32;
+        }
+
+        // Expected output: transpose of the 16x16 matrix
+        let mut expected = vec![0f32; 16];
+        for (y, chunk) in expected.chunks_exact_mut(4).enumerate() {
+            for (x, dst) in chunk.iter_mut().enumerate() {
+                *dst = (x * 4 + y) as f32;
+            }
+        }
+
+        // Create the destination matrix
+        let mut dst = vec![0f32; 16];
+
+        // Call the function
+        sse_transpose_4x4_f32::<false, false>(
+            &src, 4, // src_stride
+            &mut dst, 4, // dst_stride
+        );
+
+        println!("Expected");
+        for lane in expected.chunks_exact(4) {
+            println!("{:?}", lane);
+        }
+
+        println!("Received");
+        for lane in dst.chunks_exact(4) {
+            println!("{:?}", lane);
+        }
+
+        // Compare the result with the expected matrix
+        assert_eq!(
+            expected, dst,
+            "The transposed matrix does not match the expected result"
+        );
     }
 }

@@ -26,9 +26,7 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use fast_transpose::{
-    transpose_plane_f32, transpose_rgb, FlipMode, FlopMode,
-};
+use fast_transpose::{transpose_plane_f32, transpose_rgb, FlipMode, FlopMode};
 use image::{ColorType, GenericImageView, ImageReader};
 use std::time::Instant;
 
