@@ -27,7 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
-use crate::common::{common_process, common_process_small_blocks};
+use crate::common::*;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 use crate::neon::{
     neon_transpose_8x8_u16, neon_transpose_8x8_u16_intl_2, neon_transpose_8x8_u16_intl_3,

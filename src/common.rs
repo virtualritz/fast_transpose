@@ -224,6 +224,7 @@ pub(crate) fn common_process<
 
 #[inline]
 #[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
 pub(crate) fn common_process_small_blocks<
     V: Copy,
     const FLOP: bool,

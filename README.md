@@ -54,14 +54,14 @@ Transpose RGB image
 cargo bench --bench rgb --manifest-path ./app/Cargo.toml
 ```
 
-|                           | Time(ARM) | Time(x86) | Time(Scalar) |
-|---------------------------|:---------:|:---------:|:------------:|
-| fast_transpose(plane u8)  |  10.55ms  |     -     |   20.05ms    |
-| image(plane u8)           |  79.61ms  |     -     |   79.61ms    |
-| fast_transpose(plane u16) |  18.52ms  |     -     |   21.68ms    |
-| image(plane u16)          |  82.29ms  |     -     |   82.29ms    |
-| fast_transpose(plane f32) |  18.06ms  |     -     |   29.27ms    |
-| image(plane f32)          |  72.51ms  |     -     |   72.51ms    |
+|                         | Time(ARM) | Time(x86) | Time(Scalar) |
+|-------------------------|:---------:|:---------:|:------------:|
+| fast_transpose(rgb u8)  |  10.55ms  |     -     |   20.05ms    |
+| image(rgb u8)           |  79.61ms  |     -     |   79.61ms    |
+| fast_transpose(rgb u16) |  18.52ms  |     -     |   21.68ms    |
+| image(rgb u16)          |  82.29ms  |     -     |   82.29ms    |
+| fast_transpose(rgb f32) |  18.06ms  |     -     |   29.27ms    |
+| image(rgb f32)          |  72.51ms  |     -     |   72.51ms    |
 
 This project is licensed under either of
 

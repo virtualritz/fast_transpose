@@ -28,7 +28,7 @@
  */
 #![forbid(unsafe_code)]
 
-use crate::common::{common_process, common_process_small_blocks};
+use crate::common::*;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 use crate::neon::{
     neon_transpose_4x4_f32, neon_transpose_4x4_f32_intl_2, neon_transpose_4x4_f32_intl_3,

@@ -39,77 +39,77 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let img = img.to_luma8();
     let dimensions = img.dimensions();
     let components = 1;
-    c.bench_function("Fast transpose: Plane u8", |b| {
-        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose_plane(
-                &img,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-                FlipMode::NoFlip,
-                FlopMode::NoFlop,
-            )
-            .unwrap();
-        });
-    });
+    // c.bench_function("Fast transpose: Plane u8", |b| {
+    //     let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+    //     b.iter(|| {
+    //         transpose_plane(
+    //             &img,
+    //             &mut transposed,
+    //             dimensions.0 as usize,
+    //             dimensions.1 as usize,
+    //             FlipMode::NoFlip,
+    //             FlopMode::NoFlop,
+    //         )
+    //         .unwrap();
+    //     });
+    // });
 
-    c.bench_function("Transpose: Plane u8", |b| {
-        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose::transpose(
-                &img,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-            );
-        });
-    });
+    // c.bench_function("Transpose: Plane u8", |b| {
+    //     let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+    //     b.iter(|| {
+    //         transpose::transpose(
+    //             &img,
+    //             &mut transposed,
+    //             dimensions.0 as usize,
+    //             dimensions.1 as usize,
+    //         );
+    //     });
+    // });
 
     let dyn_image = DynamicImage::ImageLuma8(img);
 
-    c.bench_function("Image Transpose: Plane u8", |b| {
-        b.iter(|| {
-            _ = dyn_image.rotate90();
-        });
-    });
+    // c.bench_function("Image Transpose: Plane u8", |b| {
+    //     b.iter(|| {
+    //         _ = dyn_image.rotate90();
+    //     });
+    // });
 
     let img16 = dyn_image.to_luma16();
 
-    c.bench_function("Fast transpose: Plane u16", |b| {
-        let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose_plane16(
-                &img16,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-                FlipMode::NoFlip,
-                FlopMode::NoFlop,
-            )
-            .unwrap();
-        });
-    });
+    // c.bench_function("Fast transpose: Plane u16", |b| {
+    //     let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
+    //     b.iter(|| {
+    //         transpose_plane16(
+    //             &img16,
+    //             &mut transposed,
+    //             dimensions.0 as usize,
+    //             dimensions.1 as usize,
+    //             FlipMode::NoFlip,
+    //             FlopMode::NoFlop,
+    //         )
+    //         .unwrap();
+    //     });
+    // });
 
-    c.bench_function("Transpose: Plane u16", |b| {
-        let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose::transpose(
-                &img16,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-            );
-        });
-    });
+    // c.bench_function("Transpose: Plane u16", |b| {
+    //     let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
+    //     b.iter(|| {
+    //         transpose::transpose(
+    //             &img16,
+    //             &mut transposed,
+    //             dimensions.0 as usize,
+    //             dimensions.1 as usize,
+    //         );
+    //     });
+    // });
 
     let dyn_image16 = DynamicImage::ImageLuma16(img16);
 
-    c.bench_function("Image Transpose: Plane u16", |b| {
-        b.iter(|| {
-            _ = dyn_image16.rotate90();
-        });
-    });
+    // c.bench_function("Image Transpose: Plane u16", |b| {
+    //     b.iter(|| {
+    //         _ = dyn_image16.rotate90();
+    //     });
+    // });
 
     let data = dyn_image16
         .to_luma16()
