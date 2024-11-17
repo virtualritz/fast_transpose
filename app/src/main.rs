@@ -27,7 +27,8 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use fast_transpose::{
-    flip_arbitrary, transpose_arbitrary, transpose_plane_f32, transpose_rgb, FlipMode, FlopMode,
+    flip_arbitrary, flop_arbitrary, transpose_arbitrary, transpose_plane_f32, transpose_rgb,
+    FlipMode, FlopMode,
 };
 use image::{ColorType, GenericImageView, ImageReader};
 use std::time::Instant;
@@ -68,7 +69,7 @@ fn main() {
 
     let start = Instant::now();
 
-    flip_arbitrary(
+    flop_arbitrary(
         &rgb_set,
         &mut transposed_rgb,
         dimensions.0 as usize,

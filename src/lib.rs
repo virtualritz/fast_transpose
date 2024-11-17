@@ -30,6 +30,7 @@
 #[deny(unreachable_pub)]
 mod flip;
 mod float_32;
+mod flop;
 mod transpose_arbitrary;
 mod unsigned_16;
 mod unsigned_8;
@@ -42,6 +43,11 @@ pub use flip::{
 };
 pub use float_32::{
     transpose_plane_f32, transpose_plane_f32_with_alpha, transpose_rgb_f32, transpose_rgba_f32,
+};
+pub use flop::{
+    flop_arbitrary, flop_plane, flop_plane16, flop_plane16_with_alpha, flop_plane_f32,
+    flop_plane_f32_with_alpha, flop_plane_with_alpha, flop_rgb, flop_rgb16, flop_rgb_f32,
+    flop_rgba, flop_rgba16, flop_rgba_f32,
 };
 pub use transpose_arbitrary::transpose_arbitrary;
 pub use unsigned_16::{
