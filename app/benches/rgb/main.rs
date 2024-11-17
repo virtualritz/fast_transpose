@@ -28,10 +28,7 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_transpose::{
-    transpose_plane, transpose_plane16, transpose_plane_f32, transpose_rgb, transpose_rgb16,
-    transpose_rgb_f32, FlipMode, FlopMode,
-};
+use fast_transpose::{transpose_rgb, transpose_rgb16, transpose_rgb_f32, FlipMode, FlopMode};
 use image::{DynamicImage, ImageReader};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -54,6 +51,23 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 FlopMode::NoFlop,
             )
             .unwrap();
+        });
+    });
+
+    let rgb_set = img
+        .chunks_exact(3)
+        .map(|x| [x[0], x[1], x[2]])
+        .collect::<Vec<_>>();
+
+    c.bench_function("Transpose: Rgb u8", |b| {
+        let mut transposed = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
+        b.iter(|| {
+            transpose::transpose(
+                &rgb_set,
+                &mut transposed,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            );
         });
     });
 
@@ -82,6 +96,23 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
+    let rgb_set = img16
+        .chunks_exact(3)
+        .map(|x| [x[0], x[1], x[2]])
+        .collect::<Vec<_>>();
+
+    c.bench_function("Transpose: Rgb u16", |b| {
+        let mut transposed = vec![[0u16; 3]; dimensions.0 as usize * dimensions.1 as usize];
+        b.iter(|| {
+            transpose::transpose(
+                &rgb_set,
+                transposed.as_mut_slice(),
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            );
+        });
+    });
+
     let dyn_image16 = DynamicImage::ImageRgb16(img16);
 
     c.bench_function("Image Transpose: Rgb u16", |b| {
@@ -104,6 +135,23 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 FlopMode::NoFlop,
             )
             .unwrap();
+        });
+    });
+
+    let rgb_set = image_f32
+        .chunks_exact(3)
+        .map(|x| [x[0], x[1], x[2]])
+        .collect::<Vec<_>>();
+
+    c.bench_function("Transpose: Rgb u16", |b| {
+        let mut transposed = vec![[0.; 3]; dimensions.0 as usize * dimensions.1 as usize];
+        b.iter(|| {
+            transpose::transpose(
+                &rgb_set,
+                transposed.as_mut_slice(),
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            );
         });
     });
 

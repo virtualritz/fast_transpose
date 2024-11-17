@@ -16,10 +16,11 @@ repository = "https://github.com/awxkee/fast_transpose"
 exclude = ["*.jpg", "assets/*"]
 
 [dependencies]
+bytemuck = "1.19.0"
 
 [features]
-default = ["std"]
-std = []
+default = ["unsafe"]
+unsafe = []
 
 [profile.dev.package]
 miniz_oxide.opt-level = 3

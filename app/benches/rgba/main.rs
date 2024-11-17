@@ -28,7 +28,7 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_transpose::{transpose_plane, transpose_plane16, transpose_plane_f32, FlipMode, FlopMode};
+use fast_transpose::{transpose_rgba, transpose_rgba16, transpose_rgba_f32, FlipMode, FlopMode};
 use image::{DynamicImage, ImageReader};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -36,13 +36,13 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .unwrap()
         .decode()
         .unwrap();
-    let img = img.to_luma8();
+    let img = img.to_rgba8();
     let dimensions = img.dimensions();
-    let components = 1;
-    c.bench_function("Fast transpose: Plane u8", |b| {
+    let components = 4;
+    c.bench_function("Fast transpose: Rgba u8", |b| {
         let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
         b.iter(|| {
-            transpose_plane(
+            transpose_rgba(
                 &img,
                 &mut transposed,
                 dimensions.0 as usize,
@@ -54,32 +54,20 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("Transpose: Plane u8", |b| {
-        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose::transpose(
-                &img,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-            );
-        });
-    });
+    let dyn_image = DynamicImage::ImageRgba8(img);
 
-    let dyn_image = DynamicImage::ImageLuma8(img);
-
-    c.bench_function("Image Transpose: Plane u8", |b| {
+    c.bench_function("Image Transpose: Rgba u8", |b| {
         b.iter(|| {
             _ = dyn_image.rotate90();
         });
     });
 
-    let img16 = dyn_image.to_luma16();
+    let img16 = dyn_image.to_rgba16();
 
-    c.bench_function("Fast transpose: Plane u16", |b| {
+    c.bench_function("Fast transpose: Rgba u16", |b| {
         let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
         b.iter(|| {
-            transpose_plane16(
+            transpose_rgba16(
                 &img16,
                 &mut transposed,
                 dimensions.0 as usize,
@@ -91,37 +79,21 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("Transpose: Plane u16", |b| {
-        let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose::transpose(
-                &img16,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-            );
-        });
-    });
+    let dyn_image16 = DynamicImage::ImageRgba16(img16);
 
-    let dyn_image16 = DynamicImage::ImageLuma16(img16);
-
-    c.bench_function("Image Transpose: Plane u16", |b| {
+    c.bench_function("Image Transpose: Rgb u16", |b| {
         b.iter(|| {
             _ = dyn_image16.rotate90();
         });
     });
 
-    let data = dyn_image16
-        .to_luma16()
-        .iter()
-        .map(|&x| x as f32)
-        .collect::<Vec<_>>();
+    let image_f32 = dyn_image16.to_rgba32f();
 
-    c.bench_function("Fast transpose: Plane f32", |b| {
+    c.bench_function("Fast transpose: Rgba f32", |b| {
         let mut transposed = vec![0.; dimensions.0 as usize * dimensions.1 as usize * components];
         b.iter(|| {
-            transpose_plane_f32(
-                &data,
+            transpose_rgba_f32(
+                &image_f32,
                 &mut transposed,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
@@ -132,15 +104,11 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("Transpose: Plane f32", |b| {
-        let mut transposed = vec![0.; dimensions.0 as usize * dimensions.1 as usize * components];
+    let dyn_image_f32 = DynamicImage::ImageRgba32F(image_f32);
+
+    c.bench_function("Image Transpose: Rgba f32", |b| {
         b.iter(|| {
-            transpose::transpose(
-                &data,
-                &mut transposed,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-            );
+            _ = dyn_image_f32.rotate90();
         });
     });
 }

@@ -27,19 +27,22 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
-use crate::common::*;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
-use crate::neon::{
-    neon_transpose_8x8_u16, neon_transpose_8x8_u16_intl_2, neon_transpose_8x8_u16_intl_3,
-    neon_transpose_8x8_u16_intl_4,
-};
-#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
-use crate::sse::{
-    sse_transpose_8x8_u16, sse_transpose_8x8_u16_intl2, sse_transpose_8x8_u16_intl3,
-    sse_transpose_8x8_u16_intl4,
-};
-use crate::{FlipMode, FlopMode, TransposeError};
 
+use crate::{transpose_arbitrary, FlipMode, FlopMode, TransposeError};
+
+/// Performs plane image transposition
+///
+/// # Arguments
+///
+/// * `input`: Input data
+/// * `output`: Output data
+/// * `width`: Image width
+/// * `height`: Image height
+/// * `flip_mode`: see [FlipMode]
+/// * `flop_mode`: see [FlopMode]
+///
+/// returns: Result<(), TransposeError>
+///
 pub fn transpose_plane16(
     matrix: &[u16],
     target: &mut [u16],
@@ -48,20 +51,22 @@ pub fn transpose_plane16(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    match flip_mode {
-        FlipMode::NoFlip => match flop_mode {
-            FlopMode::NoFlop => {
-                transpose_u16_impl::<false, false, 1>(matrix, target, width, height)
-            }
-            FlopMode::Flop => transpose_u16_impl::<true, false, 1>(matrix, target, width, height),
-        },
-        FlipMode::Flip => match flop_mode {
-            FlopMode::NoFlop => transpose_u16_impl::<false, true, 1>(matrix, target, width, height),
-            FlopMode::Flop => transpose_u16_impl::<true, true, 1>(matrix, target, width, height),
-        },
-    }
+    transpose_arbitrary(matrix, target, width, height, flip_mode, flop_mode)
 }
 
+/// Performs plane with alpha image transposition
+///
+/// # Arguments
+///
+/// * `input`: Input data
+/// * `output`: Output data
+/// * `width`: Image width
+/// * `height`: Image height
+/// * `flip_mode`: see [FlipMode]
+/// * `flop_mode`: see [FlopMode]
+///
+/// returns: Result<(), TransposeError>
+///
 pub fn transpose_plane16_with_alpha(
     matrix: &[u16],
     target: &mut [u16],
@@ -70,20 +75,37 @@ pub fn transpose_plane16_with_alpha(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    match flip_mode {
-        FlipMode::NoFlip => match flop_mode {
-            FlopMode::NoFlop => {
-                transpose_u16_impl::<false, false, 2>(matrix, target, width, height)
-            }
-            FlopMode::Flop => transpose_u16_impl::<true, false, 2>(matrix, target, width, height),
-        },
-        FlipMode::Flip => match flop_mode {
-            FlopMode::NoFlop => transpose_u16_impl::<false, true, 2>(matrix, target, width, height),
-            FlopMode::Flop => transpose_u16_impl::<true, true, 2>(matrix, target, width, height),
-        },
-    }
+    let casted_source: &[[u16; 2]] = match bytemuck::try_cast_slice(matrix) {
+        Err(_) => return Err(TransposeError::MismatchDimensions),
+        Ok(casted_source) => casted_source,
+    };
+    let casted_target: &mut [[u16; 2]] = match bytemuck::try_cast_slice_mut(target) {
+        Err(_) => return Err(TransposeError::MismatchDimensions),
+        Ok(casted_source) => casted_source,
+    };
+    transpose_arbitrary(
+        casted_source,
+        casted_target,
+        width,
+        height,
+        flip_mode,
+        flop_mode,
+    )
 }
 
+/// Performs RGB image transposition
+///
+/// # Arguments
+///
+/// * `input`: Input data
+/// * `output`: Output data
+/// * `width`: Image width
+/// * `height`: Image height
+/// * `flip_mode`: see [FlipMode]
+/// * `flop_mode`: see [FlopMode]
+///
+/// returns: Result<(), TransposeError>
+///
 pub fn transpose_rgb16(
     matrix: &[u16],
     target: &mut [u16],
@@ -92,20 +114,37 @@ pub fn transpose_rgb16(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    match flip_mode {
-        FlipMode::NoFlip => match flop_mode {
-            FlopMode::NoFlop => {
-                transpose_u16_impl::<false, false, 3>(matrix, target, width, height)
-            }
-            FlopMode::Flop => transpose_u16_impl::<true, false, 3>(matrix, target, width, height),
-        },
-        FlipMode::Flip => match flop_mode {
-            FlopMode::NoFlop => transpose_u16_impl::<false, true, 3>(matrix, target, width, height),
-            FlopMode::Flop => transpose_u16_impl::<true, true, 3>(matrix, target, width, height),
-        },
-    }
+    let casted_source: &[[u16; 3]] = match bytemuck::try_cast_slice(matrix) {
+        Err(_) => return Err(TransposeError::MismatchDimensions),
+        Ok(casted_source) => casted_source,
+    };
+    let casted_target: &mut [[u16; 3]] = match bytemuck::try_cast_slice_mut(target) {
+        Err(_) => return Err(TransposeError::MismatchDimensions),
+        Ok(casted_source) => casted_source,
+    };
+    transpose_arbitrary(
+        casted_source,
+        casted_target,
+        width,
+        height,
+        flip_mode,
+        flop_mode,
+    )
 }
 
+/// Performs RGBA image transposition
+///
+/// # Arguments
+///
+/// * `input`: Input data
+/// * `output`: Output data
+/// * `width`: Image width
+/// * `height`: Image height
+/// * `flip_mode`: see [FlipMode]
+/// * `flop_mode`: see [FlopMode]
+///
+/// returns: Result<(), TransposeError>
+///
 pub fn transpose_rgba16(
     matrix: &[u16],
     target: &mut [u16],
@@ -114,224 +153,20 @@ pub fn transpose_rgba16(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    match flip_mode {
-        FlipMode::NoFlip => match flop_mode {
-            FlopMode::NoFlop => {
-                transpose_u16_impl::<false, false, 4>(matrix, target, width, height)
-            }
-            FlopMode::Flop => transpose_u16_impl::<true, false, 4>(matrix, target, width, height),
-        },
-        FlipMode::Flip => match flop_mode {
-            FlopMode::NoFlop => transpose_u16_impl::<false, true, 4>(matrix, target, width, height),
-            FlopMode::Flop => transpose_u16_impl::<true, true, 4>(matrix, target, width, height),
-        },
-    }
-}
-
-#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
-fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
-    matrix: &[u16],
-    target: &mut [u16],
-    width: usize,
-    height: usize,
-) -> Result<(), TransposeError> {
-    assert!(PIXEL_STRIDE >= 1 && PIXEL_STRIDE <= 4);
-    if matrix.len() != target.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
-
-    if matrix.len() != width * height * PIXEL_STRIDE {
-        return Err(TransposeError::MismatchDimensions);
-    }
-
-    let row_size = width * PIXEL_STRIDE;
-
-    let mut y = 0usize;
-
-    while y + 8 < height {
-        let source_row = if FLIP {
-            &matrix[(height - 8 - y) * row_size..((height - y) * row_size)]
-        } else {
-            &matrix[y * row_size..((y + 8) * row_size)]
-        };
-        let start_y = y * PIXEL_STRIDE;
-        let mut x = 0usize;
-
-        while x + 8 < width {
-            let dst_stride = height * PIXEL_STRIDE;
-            let dst = &mut target[(start_y + dst_stride * if FLOP { x } else { width - 8 - x })..];
-            if PIXEL_STRIDE == 4 {
-                neon_transpose_8x8_u16_intl_4::<FLOP, FLIP>(
-                    &source_row[(x * PIXEL_STRIDE)..],
-                    row_size,
-                    dst,
-                    dst_stride,
-                );
-            } else if PIXEL_STRIDE == 3 {
-                neon_transpose_8x8_u16_intl_3::<FLOP, FLIP>(
-                    &source_row[(x * PIXEL_STRIDE)..],
-                    row_size,
-                    dst,
-                    dst_stride,
-                );
-            } else if PIXEL_STRIDE == 2 {
-                neon_transpose_8x8_u16_intl_2::<FLOP, FLIP>(
-                    &source_row[(x * PIXEL_STRIDE)..],
-                    row_size,
-                    dst,
-                    dst_stride,
-                );
-            } else if PIXEL_STRIDE == 1 {
-                neon_transpose_8x8_u16::<FLOP, FLIP>(
-                    &source_row[(x * PIXEL_STRIDE)..],
-                    row_size,
-                    dst,
-                    dst_stride,
-                );
-            }
-            x += 8;
-        }
-
-        if x < width {
-            common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
-                matrix, row_size, target, width, height, x, y, 8,
-            );
-        }
-
-        y += 8;
-    }
-
-    common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
-        matrix,
-        row_size,
-        target,
+    let casted_source: &[[u16; 4]] = match bytemuck::try_cast_slice(matrix) {
+        Err(_) => return Err(TransposeError::MismatchDimensions),
+        Ok(casted_source) => casted_source,
+    };
+    let casted_target: &mut [[u16; 4]] = match bytemuck::try_cast_slice_mut(target) {
+        Err(_) => return Err(TransposeError::MismatchDimensions),
+        Ok(casted_source) => casted_source,
+    };
+    transpose_arbitrary(
+        casted_source,
+        casted_target,
         width,
         height,
-        0,
-        y,
-        height - y,
-    );
-
-    Ok(())
-}
-
-#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
-fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
-    matrix: &[u16],
-    target: &mut [u16],
-    width: usize,
-    height: usize,
-) -> Result<(), TransposeError> {
-    assert!(PIXEL_STRIDE >= 1 && PIXEL_STRIDE <= 4);
-    if matrix.len() != target.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
-
-    if matrix.len() != width * height * PIXEL_STRIDE {
-        return Err(TransposeError::MismatchDimensions);
-    }
-
-    let row_size = width * PIXEL_STRIDE;
-
-    let ssse3_available = std::arch::is_x86_feature_detected!("ssse3");
-    let sse4_available = std::arch::is_x86_feature_detected!("sse4.1");
-
-    let mut y = 0usize;
-
-    if (ssse3_available && PIXEL_STRIDE == 1) || sse4_available {
-        while y + 8 < height {
-            let source_row = if FLIP {
-                &matrix[(height - 8 - y) * row_size..((height - y) * row_size)]
-            } else {
-                &matrix[y * row_size..((y + 8) * row_size)]
-            };
-            let start_y = y * PIXEL_STRIDE;
-            let mut x = 0usize;
-
-            while x + 8 < width {
-                let dst_stride = height * PIXEL_STRIDE;
-                let dst =
-                    &mut target[(start_y + dst_stride * if FLOP { x } else { width - 8 - x })..];
-                if PIXEL_STRIDE == 4 {
-                    sse_transpose_8x8_u16_intl4::<FLOP, FLIP>(
-                        &source_row[(x * PIXEL_STRIDE)..],
-                        row_size,
-                        dst,
-                        dst_stride,
-                    );
-                } else if PIXEL_STRIDE == 3 {
-                    sse_transpose_8x8_u16_intl3::<FLOP, FLIP>(
-                        &source_row[(x * PIXEL_STRIDE)..],
-                        row_size,
-                        dst,
-                        dst_stride,
-                    );
-                } else if PIXEL_STRIDE == 2 {
-                    sse_transpose_8x8_u16_intl2::<FLOP, FLIP>(
-                        &source_row[(x * PIXEL_STRIDE)..],
-                        row_size,
-                        dst,
-                        dst_stride,
-                    );
-                } else if PIXEL_STRIDE == 1 {
-                    sse_transpose_8x8_u16::<FLOP, FLIP>(
-                        &source_row[(x * PIXEL_STRIDE)..],
-                        row_size,
-                        dst,
-                        dst_stride,
-                    );
-                }
-                x += 8;
-            }
-
-            if x < width {
-                common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
-                    matrix, row_size, target, width, height, x, y, 8,
-                );
-            }
-
-            y += 8;
-        }
-    }
-
-    common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
-        matrix,
-        row_size,
-        target,
-        width,
-        height,
-        0,
-        y,
-        height - y,
-    );
-
-    Ok(())
-}
-
-#[cfg(not(any(
-    all(target_arch = "aarch64", target_feature = "neon", feature = "std"),
-    all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std")
-)))]
-fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
-    matrix: &[u16],
-    target: &mut [u16],
-    width: usize,
-    height: usize,
-) -> Result<(), TransposeError> {
-    assert!(PIXEL_STRIDE >= 1 && PIXEL_STRIDE <= 4);
-    if matrix.len() != target.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
-
-    if matrix.len() != width * height * PIXEL_STRIDE {
-        return Err(TransposeError::MismatchDimensions);
-    }
-
-    let row_size = width * PIXEL_STRIDE;
-
-    common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
-        matrix, row_size, target, width, height, 0, 0, height,
-    );
-
-    Ok(())
+        flip_mode,
+        flop_mode,
+    )
 }

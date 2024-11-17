@@ -1,6 +1,6 @@
 # Fast image transpose
 
-Fast and simple image transposing in Rust.
+Fast and simple image rotating in Rust with flipping and flopping in-place.
 
 ### Adding to project
 
@@ -24,44 +24,7 @@ transpose_rgb(
 
 ### Features
 
-Turning off `std` feature removes `unsafe simd` support and activating `forbid unsafe` and `no_std` mode.
-
-### Benchmarks
-
-Tests are performed on the image 5000x4000
-
-Transpose plane
-
-```bash
-cargo bench --bench plane --manifest-path ./app/Cargo.toml
-```
-
-|                           | Time(NEON) | Time(x86) | Time(Scalar) |
-|---------------------------|:----------:|:---------:|:------------:|
-| fast_transpose(plane u8)  |   1.95ms   |     -     |   11.31ms    |
-| transpose(plane u8)       |   4.40ms   |     -     |    4.40ms    |
-| image(plane u8)           |  16.84ms   |     -     |   16.84ms    |
-| fast_transpose(plane u16) |   2.64ms   |     -     |   10.25ms    |
-| transpose(plane u16)      |   5.14ms   |     -     |    5.34ms    |
-| image(plane u16)          |  17.45ms   |     -     |   17.46ms    |
-| fast_transpose(plane f32) |   9.05ms   |     -     |   18.08ms    |
-| transpose(plane f32)      |   7.71ms   |     -     |    8.17ms    |
-| image(plane f32)          |     -      |     -     |      -       |
-
-Transpose RGB image
-
-```bash
-cargo bench --bench rgb --manifest-path ./app/Cargo.toml
-```
-
-|                         | Time(ARM) | Time(x86) | Time(Scalar) |
-|-------------------------|:---------:|:---------:|:------------:|
-| fast_transpose(rgb u8)  |  10.55ms  |     -     |   20.05ms    |
-| image(rgb u8)           |  79.61ms  |     -     |   79.61ms    |
-| fast_transpose(rgb u16) |  18.52ms  |     -     |   21.68ms    |
-| image(rgb u16)          |  82.29ms  |     -     |   82.29ms    |
-| fast_transpose(rgb f32) |  18.06ms  |     -     |   29.27ms    |
-| image(rgb f32)          |  72.51ms  |     -     |   72.51ms    |
+Turning off `unsafe` feature will activate `forbid unsafe` mode.
 
 This project is licensed under either of
 

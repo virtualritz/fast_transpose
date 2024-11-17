@@ -26,24 +26,18 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), forbid(unsafe_code))]
+#![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
 
-mod common;
 mod float_32;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
-mod neon;
-#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
-mod sse;
+mod transpose_arbitrary;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
-#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
-mod avx;
 
 pub use float_32::{
     transpose_plane_f32, transpose_plane_f32_with_alpha, transpose_rgb_f32, transpose_rgba_f32,
 };
+pub use transpose_arbitrary::transpose_arbitrary;
 pub use unsigned_16::{
     transpose_plane16, transpose_plane16_with_alpha, transpose_rgb16, transpose_rgba16,
 };

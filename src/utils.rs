@@ -27,9 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
-#[cfg(feature = "std")]
 use std::error::Error;
-#[cfg(feature = "std")]
 use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
@@ -38,7 +36,6 @@ pub enum TransposeError {
     InvalidArraySize,
 }
 
-#[cfg(feature = "std")]
 impl Display for TransposeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -52,7 +49,6 @@ impl Display for TransposeError {
     }
 }
 
-#[cfg(feature = "std")]
 impl Error for TransposeError {}
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]

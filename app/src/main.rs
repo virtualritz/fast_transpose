@@ -26,7 +26,7 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use fast_transpose::{transpose_plane_f32, transpose_rgb, FlipMode, FlopMode};
+use fast_transpose::{transpose_arbitrary, transpose_plane_f32, transpose_rgb, FlipMode, FlopMode};
 use image::{ColorType, GenericImageView, ImageReader};
 use std::time::Instant;
 
@@ -44,29 +44,20 @@ fn main() {
         .map(|&x| x as f32 / 255.0)
         .collect::<Vec<_>>();
 
-    let mut transposedf = vec![0.; dimensions.0 as usize * dimensions.1 as usize * 1];
-
-    let start = Instant::now();
-
-    transpose_plane_f32(
-        &img_bytes,
-        &mut transposedf,
-        dimensions.0 as usize,
-        dimensions.1 as usize,
-        FlipMode::NoFlip,
-        FlopMode::NoFlop,
-    )
-    .unwrap();
-
-    println!("f32 exec time {:?}", start.elapsed());
-
     let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+    let mut transposed_rgb = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
+
+    let rgb_set = img
+        .as_bytes()
+        .chunks_exact(3)
+        .map(|x| [x[0], x[1], x[2]])
+        .collect::<Vec<_>>();
 
     let start = Instant::now();
 
     transpose::transpose(
-        &img_bytes,
-        &mut transposedf,
+        &rgb_set,
+        &mut transposed_rgb,
         dimensions.0 as usize,
         dimensions.1 as usize,
     );
@@ -75,9 +66,9 @@ fn main() {
 
     let start = Instant::now();
 
-    transpose_rgb(
-        img.as_bytes(),
-        &mut transposed,
+    transpose_arbitrary(
+        &rgb_set,
+        &mut transposed_rgb,
         dimensions.0 as usize,
         dimensions.1 as usize,
         FlipMode::NoFlip,
@@ -86,6 +77,8 @@ fn main() {
     .unwrap();
 
     println!("Exec time {:?}", start.elapsed());
+
+    transposed = bytemuck::cast_vec(transposed_rgb);
 
     // let transposed = transposed
     //     .iter()
