@@ -199,7 +199,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
             }
 
             if x < width {
-                common_process_small_blocks::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+                common_process::<f32, FLOP, FLIP, PIXEL_STRIDE>(
                     matrix, row_size, target, width, height, x, y, 4,
                 );
             }
@@ -266,7 +266,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
             }
 
             if x < width {
-                common_process_small_blocks::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+                common_process::<f32, FLOP, FLIP, PIXEL_STRIDE>(
                     matrix, row_size, target, width, height, x, y, 8,
                 );
             }
@@ -320,7 +320,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
         }
 
         if x < width {
-            common_process_small_blocks::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+            common_process::<f32, FLOP, FLIP, PIXEL_STRIDE>(
                 matrix, row_size, target, width, height, x, y, 4,
             );
         }

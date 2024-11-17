@@ -27,9 +27,9 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use fast_transpose::{
-    transpose_plane_f32, transpose_rgb, transpose_rgb16, transpose_rgb_f32, FlipMode, FlopMode,
+    transpose_plane_f32, transpose_rgb, FlipMode, FlopMode,
 };
-use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
+use image::{ColorType, GenericImageView, ImageReader};
 use std::time::Instant;
 
 fn main() {

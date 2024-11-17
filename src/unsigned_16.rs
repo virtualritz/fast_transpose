@@ -193,7 +193,7 @@ fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
         }
 
         if x < width {
-            common_process_small_blocks::<u16, FLOP, FLIP, PIXEL_STRIDE>(
+            common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
                 matrix, row_size, target, width, height, x, y, 8,
             );
         }
@@ -285,7 +285,7 @@ fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
             }
 
             if x < width {
-                common_process_small_blocks::<u16, FLOP, FLIP, PIXEL_STRIDE>(
+                common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
                     matrix, row_size, target, width, height, x, y, 8,
                 );
             }

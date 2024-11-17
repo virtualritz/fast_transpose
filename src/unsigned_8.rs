@@ -188,7 +188,7 @@ fn transpose_u8_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usi
         }
 
         if x < width {
-            common_process_small_blocks::<u8, FLOP, FLIP, PIXEL_STRIDE>(
+            common_process::<u8, FLOP, FLIP, PIXEL_STRIDE>(
                 matrix, row_size, target, width, height, x, y, 16,
             );
         }
@@ -241,7 +241,7 @@ fn transpose_u8_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usi
         }
 
         if x < width {
-            common_process_small_blocks::<u8, FLOP, FLIP, PIXEL_STRIDE>(
+            common_process::<u8, FLOP, FLIP, PIXEL_STRIDE>(
                 matrix, row_size, target, width, height, x, y, 8,
             );
         }
@@ -333,7 +333,7 @@ fn transpose_u8_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usi
             }
 
             if x < width {
-                common_process_small_blocks::<u8, FLOP, FLIP, PIXEL_STRIDE>(
+                common_process::<u8, FLOP, FLIP, PIXEL_STRIDE>(
                     matrix, row_size, target, width, height, x, y, 8,
                 );
             }

@@ -107,6 +107,13 @@ pub(crate) fn common_process<
     let mut working_y = start_y;
     let cap_y = start_y + take_rows;
 
+    if take_rows <= 32 || width < 32 {
+        common_process_small_blocks::<V, FLOP, FLIP, PIXEL_STRIDE>(
+            src_row, row_size, target, width, height, start_x, start_y, take_rows,
+        );
+        return;
+    }
+
     while working_y + 16 < cap_y {
         let mut x = 0usize;
 
@@ -224,8 +231,7 @@ pub(crate) fn common_process<
 
 #[inline]
 #[allow(clippy::too_many_arguments)]
-#[allow(dead_code)]
-pub(crate) fn common_process_small_blocks<
+fn common_process_small_blocks<
     V: Copy,
     const FLOP: bool,
     const FLIP: bool,
