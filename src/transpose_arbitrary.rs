@@ -110,15 +110,15 @@ fn transpose_block_segmented<
 fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
     input: &[V],
     output: &mut [V],
-    row_start: usize,
-    row_end: usize,
-    col_start: usize,
-    col_end: usize,
-    total_columns: usize,
-    total_rows: usize,
+    start_y: usize,
+    end_y: usize,
+    start_x: usize,
+    end_x: usize,
+    width: usize,
+    height: usize,
 ) {
-    let nbr_rows = row_end - row_start;
-    let nbr_cols = col_end - col_start;
+    let nbr_rows = end_y - start_y;
+    let nbr_cols = end_x - start_x;
     const LIMIT: usize = 128;
     const BLOCK_SIZE: usize = 16;
     if (nbr_rows <= LIMIT && nbr_cols <= LIMIT) || nbr_rows <= 2 || nbr_cols <= 2 {
@@ -133,10 +133,10 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
                 transpose_block_segmented::<V, FLOP, FLIP, BLOCK_SIZE, BLOCK_SIZE>(
                     input,
                     output,
-                    total_columns,
-                    total_rows,
-                    col_start + x_block * BLOCK_SIZE,
-                    row_start + y_block * BLOCK_SIZE,
+                    width,
+                    height,
+                    start_x + x_block * BLOCK_SIZE,
+                    start_y + y_block * BLOCK_SIZE,
                 );
             }
 
@@ -144,10 +144,10 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
                 transpose_block::<V, FLOP, FLIP>(
                     input,
                     output,
-                    total_columns,
-                    total_rows,
-                    col_start + x_block_count * BLOCK_SIZE,
-                    row_start + y_block * BLOCK_SIZE,
+                    width,
+                    height,
+                    start_x + x_block_count * BLOCK_SIZE,
+                    start_y + y_block * BLOCK_SIZE,
                     remainder_x,
                     BLOCK_SIZE,
                 );
@@ -159,10 +159,10 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
                 transpose_block::<V, FLOP, FLIP>(
                     input,
                     output,
-                    total_columns,
-                    total_rows,
-                    col_start + x_block * BLOCK_SIZE,
-                    row_start + y_block_count * BLOCK_SIZE,
+                    width,
+                    height,
+                    start_x + x_block * BLOCK_SIZE,
+                    start_y + y_block_count * BLOCK_SIZE,
                     BLOCK_SIZE,
                     remainder_y,
                 );
@@ -172,10 +172,10 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
                 transpose_block::<V, FLOP, FLIP>(
                     input,
                     output,
-                    total_columns,
-                    total_rows,
-                    col_start + x_block_count * BLOCK_SIZE,
-                    row_start + y_block_count * BLOCK_SIZE,
+                    width,
+                    height,
+                    start_x + x_block_count * BLOCK_SIZE,
+                    start_y + y_block_count * BLOCK_SIZE,
                     remainder_x,
                     remainder_y,
                 );
@@ -185,43 +185,43 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
         transpose_arbitrary_impl::<V, FLOP, FLIP>(
             input,
             output,
-            row_start,
-            row_start + (nbr_rows / 2),
-            col_start,
-            col_end,
-            total_columns,
-            total_rows,
+            start_y,
+            start_y + (nbr_rows / 2),
+            start_x,
+            end_x,
+            width,
+            height,
         );
         transpose_arbitrary_impl::<V, FLOP, FLIP>(
             input,
             output,
-            row_start + (nbr_rows / 2),
-            row_end,
-            col_start,
-            col_end,
-            total_columns,
-            total_rows,
+            start_y + (nbr_rows / 2),
+            end_y,
+            start_x,
+            end_x,
+            width,
+            height,
         );
     } else {
         transpose_arbitrary_impl::<V, FLOP, FLIP>(
             input,
             output,
-            row_start,
-            row_end,
-            col_start,
-            col_start + (nbr_cols / 2),
-            total_columns,
-            total_rows,
+            start_y,
+            end_y,
+            start_x,
+            start_x + (nbr_cols / 2),
+            width,
+            height,
         );
         transpose_arbitrary_impl::<V, FLOP, FLIP>(
             input,
             output,
-            row_start,
-            row_end,
-            col_start + (nbr_cols / 2),
-            col_end,
-            total_columns,
-            total_rows,
+            start_y,
+            end_y,
+            start_x + (nbr_cols / 2),
+            end_x,
+            width,
+            height,
         );
     }
 }
