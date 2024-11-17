@@ -34,13 +34,13 @@ cargo bench --bench plane --manifest-path ./app/Cargo.toml
 
 |                           | Time(ARM) | Time(x86) | 
 |---------------------------|:---------:|:---------:| 
-| fast_transpose(plane u8)  |  2.01ms   |     -     | 
+| fast_transpose(plane u8)  |  1.95ms   |     -     | 
 | transpose(plane u8)       |  4.40ms   |     -     | 
 | image(plane u8)           |  16.84ms  |     -     | 
-| fast_transpose(plane u16) |  2.77ms   |     -     | 
+| fast_transpose(plane u16) |  2.64ms   |     -     | 
 | transpose(plane u16)      |  5.34ms   |     -     | 
 | image(plane u16)          |  17.46ms  |     -     | 
-| fast_transpose(plane f32) |  18.92ms  |     -     | 
+| fast_transpose(plane f32) |  9.85ms   |     -     | 
 | transpose(plane f32)      |  7.71ms   |     -     | 
 | image(plane f32)          |     -     |     -     | 
 
@@ -52,7 +52,7 @@ cargo bench --bench rgb --manifest-path ./app/Cargo.toml
 
 |                           | Time(ARM) | Time(x86) | 
 |---------------------------|:---------:|:---------:| 
-| fast_transpose(plane u8)  |  10.75ms  |     -     | 
+| fast_transpose(plane u8)  |  10.65ms  |     -     | 
 | image(plane u8)           |  79.61ms  |     -     | 
 | fast_transpose(plane u16) |  18.52ms  |     -     | 
 | image(plane u16)          |  82.29ms  |     -     | 

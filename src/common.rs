@@ -46,6 +46,7 @@ pub(crate) fn common_process<
     take_rows: usize,
 ) {
     let dst_stride = height * PIXEL_STRIDE;
+    
     for y in start_y..(start_y + take_rows) {
         let s_start_y = if FLIP { height - 1 - y } else { y };
         let start_row_offset_x = s_start_y * row_size + PIXEL_STRIDE * start_x;
@@ -61,7 +62,21 @@ pub(crate) fn common_process<
                     width - 1 - (x + start_x)
                 };
             let dst = &mut target[offset..(offset + PIXEL_STRIDE)];
-            dst[..PIXEL_STRIDE].copy_from_slice(src);
+            if PIXEL_STRIDE == 1 {
+                dst[0] = src[0];
+            } else if PIXEL_STRIDE == 2 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+            } else if PIXEL_STRIDE == 3 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+            } else if PIXEL_STRIDE == 4 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+                dst[3] = src[3];
+            }
         }
     }
 }

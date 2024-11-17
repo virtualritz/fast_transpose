@@ -40,16 +40,16 @@ fn main() {
 
     let dimensions = img.dimensions();
     let components = if img.color() == ColorType::Rgb8 { 3 } else { 4 };
-    let img = img.to_rgb32f();
+    let img_bytes = img.to_luma8().iter().map(|&x| x as f32 / 255.0).collect::<Vec<_>>();
 
-    let mut transposed = vec![0.; dimensions.0 as usize * dimensions.1 as usize * components];
+    let mut transposed = vec![0.; dimensions.0 as usize * dimensions.1 as usize * 1];
 
     let start = Instant::now();
 
     transpose::transpose(
-        &img,
+        &img_bytes,
         &mut transposed,
-        dimensions.0 as usize * 3,
+        dimensions.0 as usize,
         dimensions.1 as usize,
     );
 
@@ -58,9 +58,9 @@ fn main() {
     let start = Instant::now();
 
     transpose_plane_f32(
-        &img,
+        &img_bytes,
         &mut transposed,
-        dimensions.0 as usize * 3,
+        dimensions.0 as usize,
         dimensions.1 as usize,
         FlipMode::NoFlip,
         FlopMode::NoFlop,
@@ -69,39 +69,41 @@ fn main() {
 
     println!("Exec time {:?}", start.elapsed());
 
-    let start = Instant::now();
-
-    let dyn_img = DynamicImage::ImageRgb32F(img);
-    _ = dyn_img.rotate90();
-
-    println!("Exec time {:?}", start.elapsed());
-
     let transposed = transposed
         .iter()
         .map(|&x| (x * 255.) as u8)
         .collect::<Vec<_>>();
 
-    if components == 3 {
-        image::save_buffer(
-            "transposed.jpg",
-            &transposed,
-            dimensions.1,
-            dimensions.0,
-            image::ExtendedColorType::Rgb8,
-        )
+    image::save_buffer(
+        "transposed.jpg",
+        &transposed,
+        dimensions.1,
+        dimensions.0,
+        image::ExtendedColorType::L8,
+    )
         .unwrap();
-    } else {
-        image::save_buffer(
-            "transposed.png",
-            &transposed,
-            dimensions.1,
-            dimensions.0,
-            if components == 3 {
-                image::ExtendedColorType::Rgb8
-            } else {
-                image::ExtendedColorType::Rgba8
-            },
-        )
-        .unwrap();
-    }
+    
+    // if components == 3 {
+    //     image::save_buffer(
+    //         "transposed.jpg",
+    //         &transposed,
+    //         dimensions.1,
+    //         dimensions.0,
+    //         image::ExtendedColorType::Rgb8,
+    //     )
+    //     .unwrap();
+    // } else {
+    //     image::save_buffer(
+    //         "transposed.png",
+    //         &transposed,
+    //         dimensions.1,
+    //         dimensions.0,
+    //         if components == 3 {
+    //             image::ExtendedColorType::Rgb8
+    //         } else {
+    //             image::ExtendedColorType::Rgba8
+    //         },
+    //     )
+    //     .unwrap();
+    // }
 }

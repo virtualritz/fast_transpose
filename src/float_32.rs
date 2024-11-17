@@ -27,11 +27,12 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
+
 use crate::common::common_process;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
 use crate::neon::{
     neon_transpose_4x4_f32, neon_transpose_4x4_f32_intl_2, neon_transpose_4x4_f32_intl_3,
-    neon_transpose_4x4_f32_intl_4,
+    neon_transpose_4x4_f32_intl_4
 };
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 use crate::sse::{
@@ -240,7 +241,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
     let row_size = width * PIXEL_STRIDE;
 
     let mut y = 0usize;
-
+    
     while y + 4 < height {
         let source_row = if FLIP {
             &matrix[(height - 4 - y) * row_size..((height - y) * row_size)]
