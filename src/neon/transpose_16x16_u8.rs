@@ -542,7 +542,7 @@ pub(crate) fn neon_transpose_16x16_intl_2<const FLOP: bool, const FLIP: bool>(
                 uint8x16x2_t(r3.2, g3.2),
             );
             vst2q_u8(
-                dst.get_unchecked_mut(0 * dst_stride..).as_mut_ptr(),
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
                 uint8x16x2_t(r3.3, g3.3),
             );
         }

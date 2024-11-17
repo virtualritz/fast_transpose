@@ -22,6 +22,10 @@ transpose_rgb(
 .unwrap();
 ```
 
+### Features
+
+Turning off `std` feature removes `unsafe simd` support and activating `forbid unsafe` and `no_std` mode.
+
 ### Benchmarks
 
 Tests are performed on the image 5000x4000

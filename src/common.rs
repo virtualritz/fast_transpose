@@ -53,21 +53,19 @@ fn common_process_block<
     for y in start_y..cap_y {
         let s_start_y = if FLIP { height - 1 - y } else { y };
         let start_row_offset_x = s_start_y * row_size + PIXEL_STRIDE * start_x;
-        let end_row = (s_start_y + 1) * row_size;
-        let start_row = &src_row[start_row_offset_x..end_row];
 
-        let target = &mut target[y * PIXEL_STRIDE..];
-        for (x, src) in start_row
-            .chunks_exact(PIXEL_STRIDE)
-            .enumerate()
-            .take(BLOCK_SIZE_X)
-        {
-            let offset = dst_stride
-                * if FLOP {
-                    x + start_x
-                } else {
-                    width - 1 - (x + start_x)
-                };
+        let py = y * PIXEL_STRIDE;
+
+        for x in 0..BLOCK_SIZE_X {
+            let vx = start_row_offset_x + x * PIXEL_STRIDE;
+            let src = &src_row[vx..(vx + PIXEL_STRIDE)];
+            let offset = py
+                + dst_stride
+                    * if FLOP {
+                        x + start_x
+                    } else {
+                        width - 1 - (x + start_x)
+                    };
             let dst = &mut target[offset..(offset + PIXEL_STRIDE)];
             if PIXEL_STRIDE == 1 {
                 dst[0] = src[0];
@@ -224,7 +222,6 @@ pub(crate) fn common_process<
     }
 }
 
-
 #[inline]
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn common_process_small_blocks<
@@ -243,9 +240,9 @@ pub(crate) fn common_process_small_blocks<
     take_rows: usize,
 ) {
     let dst_stride = height * PIXEL_STRIDE;
-    let mut working_y = start_y;
+    let working_y = start_y;
     let cap_y = start_y + take_rows;
-    
+
     for y in working_y..cap_y {
         let s_start_y = if FLIP { height - 1 - y } else { y };
         let start_row_offset_x = s_start_y * row_size + PIXEL_STRIDE * start_x;
@@ -256,10 +253,10 @@ pub(crate) fn common_process_small_blocks<
         for (x, src) in start_row.chunks_exact(PIXEL_STRIDE).enumerate() {
             let offset = dst_stride
                 * if FLOP {
-                x + start_x
-            } else {
-                width - 1 - (x + start_x)
-            };
+                    x + start_x
+                } else {
+                    width - 1 - (x + start_x)
+                };
             let dst = &mut target[offset..(offset + PIXEL_STRIDE)];
             if PIXEL_STRIDE == 1 {
                 dst[0] = src[0];

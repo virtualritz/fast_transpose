@@ -147,36 +147,36 @@ unsafe fn sse_transpose_8x8_u16_impl_1<const FLOP: bool, const FLIP: bool>(
     dst: &mut [u16],
     dst_stride: usize,
 ) {
-    let row0 = _mm_loadu_si128_u16(&src[0..]);
-    let row1 = _mm_loadu_si128_u16(&src[src_stride..]);
-    let row2 = _mm_loadu_si128_u16(&src[2 * src_stride..]);
-    let row3 = _mm_loadu_si128_u16(&src[3 * src_stride..]);
-    let row4 = _mm_loadu_si128_u16(&src[4 * src_stride..]);
-    let row5 = _mm_loadu_si128_u16(&src[5 * src_stride..]);
-    let row6 = _mm_loadu_si128_u16(&src[6 * src_stride..]);
-    let row7 = _mm_loadu_si128_u16(&src[7 * src_stride..]);
+    let row0 = _mm_loadu_si128_u16(src.get_unchecked(0..));
+    let row1 = _mm_loadu_si128_u16(src.get_unchecked(src_stride..));
+    let row2 = _mm_loadu_si128_u16(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_loadu_si128_u16(src.get_unchecked(3 * src_stride..));
+    let row4 = _mm_loadu_si128_u16(src.get_unchecked(4 * src_stride..));
+    let row5 = _mm_loadu_si128_u16(src.get_unchecked(5 * src_stride..));
+    let row6 = _mm_loadu_si128_u16(src.get_unchecked(6 * src_stride..));
+    let row7 = _mm_loadu_si128_u16(src.get_unchecked(7 * src_stride..));
 
     let (v0, v1) =
         sse_transpose_8x8_impl::<FLIP>((row0, row1, row2, row3), (row4, row5, row6, row7));
 
     if FLOP {
-        _mm_storeu_si128_u16(&mut dst[7 * dst_stride..], v0.0);
-        _mm_storeu_si128_u16(&mut dst[6 * dst_stride..], v0.1);
-        _mm_storeu_si128_u16(&mut dst[5 * dst_stride..], v0.2);
-        _mm_storeu_si128_u16(&mut dst[4 * dst_stride..], v0.3);
-        _mm_storeu_si128_u16(&mut dst[3 * dst_stride..], v1.0);
-        _mm_storeu_si128_u16(&mut dst[2 * dst_stride..], v1.1);
-        _mm_storeu_si128_u16(&mut dst[dst_stride..], v1.2);
-        _mm_storeu_si128_u16(&mut dst[0..], v1.3);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(7 * dst_stride..), v0.0);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(6 * dst_stride..), v0.1);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(5 * dst_stride..), v0.2);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(4 * dst_stride..), v0.3);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(3 * dst_stride..), v1.0);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(2 * dst_stride..), v1.1);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(dst_stride..), v1.2);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(0..), v1.3);
     } else {
-        _mm_storeu_si128_u16(&mut dst[0..], v0.0);
-        _mm_storeu_si128_u16(&mut dst[dst_stride..], v0.1);
-        _mm_storeu_si128_u16(&mut dst[2 * dst_stride..], v0.2);
-        _mm_storeu_si128_u16(&mut dst[3 * dst_stride..], v0.3);
-        _mm_storeu_si128_u16(&mut dst[4 * dst_stride..], v1.0);
-        _mm_storeu_si128_u16(&mut dst[5 * dst_stride..], v1.1);
-        _mm_storeu_si128_u16(&mut dst[6 * dst_stride..], v1.2);
-        _mm_storeu_si128_u16(&mut dst[7 * dst_stride..], v1.3);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(0..), v0.0);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(dst_stride..), v0.1);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(2 * dst_stride..), v0.2);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(3 * dst_stride..), v0.3);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(4 * dst_stride..), v1.0);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(5 * dst_stride..), v1.1);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(6 * dst_stride..), v1.2);
+        _mm_storeu_si128_u16(dst.get_unchecked_mut(7 * dst_stride..), v1.3);
     }
 }
 
@@ -197,14 +197,14 @@ unsafe fn sse_transpose_8x8_u16_impl_x3<const FLOP: bool, const FLIP: bool>(
     dst: &mut [u16],
     dst_stride: usize,
 ) {
-    let row0 = _mm_load_deinterleave_rgb16(&src[0..]);
-    let row1 = _mm_load_deinterleave_rgb16(&src[src_stride..]);
-    let row2 = _mm_load_deinterleave_rgb16(&src[2 * src_stride..]);
-    let row3 = _mm_load_deinterleave_rgb16(&src[3 * src_stride..]);
-    let row4 = _mm_load_deinterleave_rgb16(&src[4 * src_stride..]);
-    let row5 = _mm_load_deinterleave_rgb16(&src[5 * src_stride..]);
-    let row6 = _mm_load_deinterleave_rgb16(&src[6 * src_stride..]);
-    let row7 = _mm_load_deinterleave_rgb16(&src[7 * src_stride..]);
+    let row0 = _mm_load_deinterleave_rgb16(src.get_unchecked(0..));
+    let row1 = _mm_load_deinterleave_rgb16(src.get_unchecked(src_stride..));
+    let row2 = _mm_load_deinterleave_rgb16(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_load_deinterleave_rgb16(src.get_unchecked(3 * src_stride..));
+    let row4 = _mm_load_deinterleave_rgb16(src.get_unchecked(4 * src_stride..));
+    let row5 = _mm_load_deinterleave_rgb16(src.get_unchecked(5 * src_stride..));
+    let row6 = _mm_load_deinterleave_rgb16(src.get_unchecked(6 * src_stride..));
+    let row7 = _mm_load_deinterleave_rgb16(src.get_unchecked(7 * src_stride..));
 
     let (r0, r1) = sse_transpose_8x8_impl::<FLIP>(
         (row0.0, row1.0, row2.0, row3.0),
@@ -222,23 +222,23 @@ unsafe fn sse_transpose_8x8_u16_impl_x3<const FLOP: bool, const FLIP: bool>(
     );
 
     if FLOP {
-        _mm_store_interleave_rgb16(&mut dst[0..], (r0.0, g0.0, b0.0));
-        _mm_store_interleave_rgb16(&mut dst[dst_stride..], (r0.1, g0.1, b0.1));
-        _mm_store_interleave_rgb16(&mut dst[2 * dst_stride..], (r0.2, g0.2, b0.2));
-        _mm_store_interleave_rgb16(&mut dst[3 * dst_stride..], (r0.3, g0.3, b0.3));
-        _mm_store_interleave_rgb16(&mut dst[4 * dst_stride..], (r1.0, g1.0, b1.0));
-        _mm_store_interleave_rgb16(&mut dst[5 * dst_stride..], (r1.1, g1.1, b1.1));
-        _mm_store_interleave_rgb16(&mut dst[6 * dst_stride..], (r1.2, g1.2, b1.2));
-        _mm_store_interleave_rgb16(&mut dst[7 * dst_stride..], (r1.3, g1.3, b1.3));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(0..), (r0.0, g0.0, b0.0));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(dst_stride..), (r0.1, g0.1, b0.1));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(2 * dst_stride..), (r0.2, g0.2, b0.2));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(3 * dst_stride..), (r0.3, g0.3, b0.3));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(4 * dst_stride..), (r1.0, g1.0, b1.0));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(5 * dst_stride..), (r1.1, g1.1, b1.1));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(6 * dst_stride..), (r1.2, g1.2, b1.2));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(7 * dst_stride..), (r1.3, g1.3, b1.3));
     } else {
-        _mm_store_interleave_rgb16(&mut dst[7 * dst_stride..], (r0.0, g0.0, b0.0));
-        _mm_store_interleave_rgb16(&mut dst[6 * dst_stride..], (r0.1, g0.1, b0.1));
-        _mm_store_interleave_rgb16(&mut dst[5 * dst_stride..], (r0.2, g0.2, b0.2));
-        _mm_store_interleave_rgb16(&mut dst[4 * dst_stride..], (r0.3, g0.3, b0.3));
-        _mm_store_interleave_rgb16(&mut dst[3 * dst_stride..], (r1.0, g1.0, b1.0));
-        _mm_store_interleave_rgb16(&mut dst[2 * dst_stride..], (r1.1, g1.1, b1.1));
-        _mm_store_interleave_rgb16(&mut dst[dst_stride..], (r1.2, g1.2, b1.2));
-        _mm_store_interleave_rgb16(&mut dst[0..], (r1.3, g1.3, b1.3));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(7 * dst_stride..), (r0.0, g0.0, b0.0));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(6 * dst_stride..), (r0.1, g0.1, b0.1));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(5 * dst_stride..), (r0.2, g0.2, b0.2));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(4 * dst_stride..), (r0.3, g0.3, b0.3));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(3 * dst_stride..), (r1.0, g1.0, b1.0));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(2 * dst_stride..), (r1.1, g1.1, b1.1));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(dst_stride..), (r1.2, g1.2, b1.2));
+        _mm_store_interleave_rgb16(dst.get_unchecked_mut(0..), (r1.3, g1.3, b1.3));
     }
 }
 
@@ -259,14 +259,14 @@ unsafe fn sse_transpose_8x8_impl_intl_4<const FLOP: bool, const FLIP: bool>(
     dst: &mut [u16],
     dst_stride: usize,
 ) {
-    let row0 = _mm_load_deinterleave_rgba16(&src[0..]);
-    let row1 = _mm_load_deinterleave_rgba16(&src[src_stride..]);
-    let row2 = _mm_load_deinterleave_rgba16(&src[2 * src_stride..]);
-    let row3 = _mm_load_deinterleave_rgba16(&src[3 * src_stride..]);
-    let row4 = _mm_load_deinterleave_rgba16(&src[4 * src_stride..]);
-    let row5 = _mm_load_deinterleave_rgba16(&src[5 * src_stride..]);
-    let row6 = _mm_load_deinterleave_rgba16(&src[6 * src_stride..]);
-    let row7 = _mm_load_deinterleave_rgba16(&src[7 * src_stride..]);
+    let row0 = _mm_load_deinterleave_rgba16(src.get_unchecked(0..));
+    let row1 = _mm_load_deinterleave_rgba16(src.get_unchecked(src_stride..));
+    let row2 = _mm_load_deinterleave_rgba16(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_load_deinterleave_rgba16(src.get_unchecked(3 * src_stride..));
+    let row4 = _mm_load_deinterleave_rgba16(src.get_unchecked(4 * src_stride..));
+    let row5 = _mm_load_deinterleave_rgba16(src.get_unchecked(5 * src_stride..));
+    let row6 = _mm_load_deinterleave_rgba16(src.get_unchecked(6 * src_stride..));
+    let row7 = _mm_load_deinterleave_rgba16(src.get_unchecked(7 * src_stride..));
 
     let (r0, r1) = sse_transpose_8x8_impl::<FLIP>(
         (row0.0, row1.0, row2.0, row3.0),
@@ -289,23 +289,65 @@ unsafe fn sse_transpose_8x8_impl_intl_4<const FLOP: bool, const FLIP: bool>(
     );
 
     if FLOP {
-        _mm_store_interleave_rgba16(&mut dst[0..], (r0.0, g0.0, b0.0, a0.0));
-        _mm_store_interleave_rgba16(&mut dst[dst_stride..], (r0.1, g0.1, b0.1, a0.1));
-        _mm_store_interleave_rgba16(&mut dst[2 * dst_stride..], (r0.2, g0.2, b0.2, a0.2));
-        _mm_store_interleave_rgba16(&mut dst[3 * dst_stride..], (r0.3, g0.3, b0.3, a0.3));
-        _mm_store_interleave_rgba16(&mut dst[4 * dst_stride..], (r1.0, g1.0, b1.0, a1.0));
-        _mm_store_interleave_rgba16(&mut dst[5 * dst_stride..], (r1.1, g1.1, b1.1, a1.1));
-        _mm_store_interleave_rgba16(&mut dst[6 * dst_stride..], (r1.2, g1.2, b1.2, a1.2));
-        _mm_store_interleave_rgba16(&mut dst[7 * dst_stride..], (r1.3, g1.3, b1.3, a1.3));
+        _mm_store_interleave_rgba16(dst.get_unchecked_mut(0..), (r0.0, g0.0, b0.0, a0.0));
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(dst_stride..),
+            (r0.1, g0.1, b0.1, a0.1),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(2 * dst_stride..),
+            (r0.2, g0.2, b0.2, a0.2),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(3 * dst_stride..),
+            (r0.3, g0.3, b0.3, a0.3),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(4 * dst_stride..),
+            (r1.0, g1.0, b1.0, a1.0),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(5 * dst_stride..),
+            (r1.1, g1.1, b1.1, a1.1),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(6 * dst_stride..),
+            (r1.2, g1.2, b1.2, a1.2),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(7 * dst_stride..),
+            (r1.3, g1.3, b1.3, a1.3),
+        );
     } else {
-        _mm_store_interleave_rgba16(&mut dst[7 * dst_stride..], (r0.0, g0.0, b0.0, a0.0));
-        _mm_store_interleave_rgba16(&mut dst[6 * dst_stride..], (r0.1, g0.1, b0.1, a0.1));
-        _mm_store_interleave_rgba16(&mut dst[5 * dst_stride..], (r0.2, g0.2, b0.2, a0.2));
-        _mm_store_interleave_rgba16(&mut dst[4 * dst_stride..], (r0.3, g0.3, b0.3, a0.3));
-        _mm_store_interleave_rgba16(&mut dst[3 * dst_stride..], (r1.0, g1.0, b1.0, a1.0));
-        _mm_store_interleave_rgba16(&mut dst[2 * dst_stride..], (r1.1, g1.1, b1.1, a1.1));
-        _mm_store_interleave_rgba16(&mut dst[dst_stride..], (r1.2, g1.2, b1.2, a1.2));
-        _mm_store_interleave_rgba16(&mut dst[0..], (r1.3, g1.3, b1.3, a1.3));
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(7 * dst_stride..),
+            (r0.0, g0.0, b0.0, a0.0),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(6 * dst_stride..),
+            (r0.1, g0.1, b0.1, a0.1),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(5 * dst_stride..),
+            (r0.2, g0.2, b0.2, a0.2),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(4 * dst_stride..),
+            (r0.3, g0.3, b0.3, a0.3),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(3 * dst_stride..),
+            (r1.0, g1.0, b1.0, a1.0),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(2 * dst_stride..),
+            (r1.1, g1.1, b1.1, a1.1),
+        );
+        _mm_store_interleave_rgba16(
+            dst.get_unchecked_mut(dst_stride..),
+            (r1.2, g1.2, b1.2, a1.2),
+        );
+        _mm_store_interleave_rgba16(dst.get_unchecked_mut(0..), (r1.3, g1.3, b1.3, a1.3));
     }
 }
 
@@ -326,14 +368,14 @@ unsafe fn sse_transpose_8x8_impl_intl_2<const FLOP: bool, const FLIP: bool>(
     dst: &mut [u16],
     dst_stride: usize,
 ) {
-    let row0 = _mm_load_deinterleave_la16(&src[0..]);
-    let row1 = _mm_load_deinterleave_la16(&src[src_stride..]);
-    let row2 = _mm_load_deinterleave_la16(&src[2 * src_stride..]);
-    let row3 = _mm_load_deinterleave_la16(&src[3 * src_stride..]);
-    let row4 = _mm_load_deinterleave_la16(&src[4 * src_stride..]);
-    let row5 = _mm_load_deinterleave_la16(&src[5 * src_stride..]);
-    let row6 = _mm_load_deinterleave_la16(&src[6 * src_stride..]);
-    let row7 = _mm_load_deinterleave_la16(&src[7 * src_stride..]);
+    let row0 = _mm_load_deinterleave_la16(src.get_unchecked(0..));
+    let row1 = _mm_load_deinterleave_la16(src.get_unchecked(src_stride..));
+    let row2 = _mm_load_deinterleave_la16(src.get_unchecked(2 * src_stride..));
+    let row3 = _mm_load_deinterleave_la16(src.get_unchecked(3 * src_stride..));
+    let row4 = _mm_load_deinterleave_la16(src.get_unchecked(4 * src_stride..));
+    let row5 = _mm_load_deinterleave_la16(src.get_unchecked(5 * src_stride..));
+    let row6 = _mm_load_deinterleave_la16(src.get_unchecked(6 * src_stride..));
+    let row7 = _mm_load_deinterleave_la16(src.get_unchecked(7 * src_stride..));
 
     let (r0, r1) = sse_transpose_8x8_impl::<FLIP>(
         (row0.0, row1.0, row2.0, row3.0),
@@ -346,23 +388,23 @@ unsafe fn sse_transpose_8x8_impl_intl_2<const FLOP: bool, const FLIP: bool>(
     );
 
     if FLOP {
-        _mm_store_interleave_la16(&mut dst[0..], (r0.0, g0.0));
-        _mm_store_interleave_la16(&mut dst[dst_stride..], (r0.1, g0.1));
-        _mm_store_interleave_la16(&mut dst[2 * dst_stride..], (r0.2, g0.2));
-        _mm_store_interleave_la16(&mut dst[3 * dst_stride..], (r0.3, g0.3));
-        _mm_store_interleave_la16(&mut dst[4 * dst_stride..], (r1.0, g1.0));
-        _mm_store_interleave_la16(&mut dst[5 * dst_stride..], (r1.1, g1.1));
-        _mm_store_interleave_la16(&mut dst[6 * dst_stride..], (r1.2, g1.2));
-        _mm_store_interleave_la16(&mut dst[7 * dst_stride..], (r1.3, g1.3));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(0..), (r0.0, g0.0));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(dst_stride..), (r0.1, g0.1));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(2 * dst_stride..), (r0.2, g0.2));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(3 * dst_stride..), (r0.3, g0.3));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(4 * dst_stride..), (r1.0, g1.0));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(5 * dst_stride..), (r1.1, g1.1));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(6 * dst_stride..), (r1.2, g1.2));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(7 * dst_stride..), (r1.3, g1.3));
     } else {
-        _mm_store_interleave_la16(&mut dst[7 * dst_stride..], (r0.0, g0.0));
-        _mm_store_interleave_la16(&mut dst[6 * dst_stride..], (r0.1, g0.1));
-        _mm_store_interleave_la16(&mut dst[5 * dst_stride..], (r0.2, g0.2));
-        _mm_store_interleave_la16(&mut dst[4 * dst_stride..], (r0.3, g0.3));
-        _mm_store_interleave_la16(&mut dst[3 * dst_stride..], (r1.0, g1.0));
-        _mm_store_interleave_la16(&mut dst[2 * dst_stride..], (r1.1, g1.1));
-        _mm_store_interleave_la16(&mut dst[dst_stride..], (r1.2, g1.2));
-        _mm_store_interleave_la16(&mut dst[0..], (r1.3, g1.3));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(7 * dst_stride..), (r0.0, g0.0));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(6 * dst_stride..), (r0.1, g0.1));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(5 * dst_stride..), (r0.2, g0.2));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(4 * dst_stride..), (r0.3, g0.3));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(3 * dst_stride..), (r1.0, g1.0));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(2 * dst_stride..), (r1.1, g1.1));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(dst_stride..), (r1.2, g1.2));
+        _mm_store_interleave_la16(dst.get_unchecked_mut(0..), (r1.3, g1.3));
     }
 }
 
