@@ -28,6 +28,8 @@
  */
 #![forbid(unsafe_code)]
 
+#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
+use crate::avx::avx_transpose_8x8_f32;
 use crate::common::*;
 #[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 use crate::neon::{
@@ -149,8 +151,44 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
 
     let ssse3_available = std::arch::is_x86_feature_detected!("ssse3");
     let sse4_available = std::arch::is_x86_feature_detected!("sse4.1");
+    let avx_available = std::arch::is_x86_feature_detected!("avx");
 
     let mut y = 0usize;
+
+    if avx_available && PIXEL_STRIDE == 1 {
+        while y + 8 < height {
+            let source_row = if FLIP {
+                &matrix[(height - 8 - y) * row_size..((height - y) * row_size)]
+            } else {
+                &matrix[y * row_size..((y + 8) * row_size)]
+            };
+            let start_y = y * PIXEL_STRIDE;
+            let mut x = 0usize;
+
+            while x + 8 < width {
+                let dst_stride = height * PIXEL_STRIDE;
+                let dst =
+                    &mut target[(start_y + dst_stride * if FLOP { x } else { width - 8 - x })..];
+                if PIXEL_STRIDE == 1 {
+                    avx_transpose_8x8_f32::<FLOP, FLIP>(
+                        &source_row[(x * PIXEL_STRIDE)..],
+                        row_size,
+                        dst,
+                        dst_stride,
+                    );
+                }
+                x += 8;
+            }
+
+            if x < width {
+                common_process::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+                    matrix, row_size, target, width, height, x, y, 8,
+                );
+            }
+
+            y += 8;
+        }
+    }
 
     if (ssse3_available && PIXEL_STRIDE == 1) || sse4_available {
         while y + 4 < height {
