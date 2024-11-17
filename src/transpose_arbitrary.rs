@@ -117,16 +117,16 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
     width: usize,
     height: usize,
 ) {
-    let nbr_rows = end_y - start_y;
-    let nbr_cols = end_x - start_x;
+    let length_y = end_y - start_y;
+    let length_x = end_x - start_x;
     const LIMIT: usize = 128;
     const BLOCK_SIZE: usize = 16;
-    if (nbr_rows <= LIMIT && nbr_cols <= LIMIT) || nbr_rows <= 2 || nbr_cols <= 2 {
-        let x_block_count = nbr_cols / BLOCK_SIZE;
-        let y_block_count = nbr_rows / BLOCK_SIZE;
+    if (length_y <= LIMIT && length_x <= LIMIT) || length_y <= 2 || length_x <= 2 {
+        let x_block_count = length_x / BLOCK_SIZE;
+        let y_block_count = length_y / BLOCK_SIZE;
 
-        let remainder_x = nbr_cols - x_block_count * BLOCK_SIZE;
-        let remainder_y = nbr_rows - y_block_count * BLOCK_SIZE;
+        let remainder_x = length_x - x_block_count * BLOCK_SIZE;
+        let remainder_y = length_y - y_block_count * BLOCK_SIZE;
 
         for y_block in 0..y_block_count {
             for x_block in 0..x_block_count {
@@ -181,12 +181,12 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
                 );
             }
         }
-    } else if nbr_rows >= nbr_cols {
+    } else if length_y >= length_x {
         transpose_arbitrary_impl::<V, FLOP, FLIP>(
             input,
             output,
             start_y,
-            start_y + (nbr_rows / 2),
+            start_y + (length_y / 2),
             start_x,
             end_x,
             width,
@@ -195,7 +195,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
         transpose_arbitrary_impl::<V, FLOP, FLIP>(
             input,
             output,
-            start_y + (nbr_rows / 2),
+            start_y + (length_y / 2),
             end_y,
             start_x,
             end_x,
@@ -209,7 +209,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             start_y,
             end_y,
             start_x,
-            start_x + (nbr_cols / 2),
+            start_x + (length_x / 2),
             width,
             height,
         );
@@ -218,7 +218,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             output,
             start_y,
             end_y,
-            start_x + (nbr_cols / 2),
+            start_x + (length_x / 2),
             end_x,
             width,
             height,

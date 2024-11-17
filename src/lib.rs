@@ -27,13 +27,19 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
-
+#[deny(unreachable_pub)]
+mod flip;
 mod float_32;
 mod transpose_arbitrary;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
 
+pub use flip::{
+    flip_arbitrary, flip_plane, flip_plane16, flip_plane16_with_alpha, flip_plane_f32,
+    flip_plane_f32_with_alpha, flip_plane_with_alpha, flip_rgb, flip_rgb16, flip_rgb_f32,
+    flip_rgba, flip_rgba16, flip_rgba_f32,
+};
 pub use float_32::{
     transpose_plane_f32, transpose_plane_f32_with_alpha, transpose_rgb_f32, transpose_rgba_f32,
 };
