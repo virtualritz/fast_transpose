@@ -62,13 +62,13 @@ pub(crate) unsafe fn vrev128_u32(a: uint32x4_t) -> uint32x4_t {
 
 #[inline(always)]
 pub(crate) unsafe fn vtrnq_s64_to_u32(a0: uint32x4_t, a1: uint32x4_t) -> uint32x4x2_t {
-    let a0 = vreinterpretq_u32_u64(vtrn1q_u64(
+    let b0 = vreinterpretq_u32_u64(vtrn1q_u64(
         vreinterpretq_u64_u32(a0),
         vreinterpretq_u64_u32(a1),
     ));
-    let a1 = vreinterpretq_u32_u64(vtrn2q_u64(
+    let b1 = vreinterpretq_u32_u64(vtrn2q_u64(
         vreinterpretq_u64_u32(a0),
         vreinterpretq_u64_u32(a1),
     ));
-    uint32x4x2_t(a0, a1)
+    uint32x4x2_t(b0, b1)
 }

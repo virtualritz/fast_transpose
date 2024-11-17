@@ -17,6 +17,10 @@ exclude = ["*.jpg", "assets/*"]
 
 [dependencies]
 
+[features]
+default = ["std"]
+std = []
+
 [profile.dev.package]
 miniz_oxide.opt-level = 3
 png.opt-level = 3

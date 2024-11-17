@@ -28,6 +28,66 @@
  */
 #![forbid(unsafe_code)]
 
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+fn common_process_block<
+    V: Copy,
+    const FLOP: bool,
+    const FLIP: bool,
+    const PIXEL_STRIDE: usize,
+    const BLOCK_SIZE_X: usize,
+    const BLOCK_SIZE_Y: usize,
+>(
+    src_row: &[V],
+    row_size: usize,
+    target: &mut [V],
+    width: usize,
+    height: usize,
+    start_x: usize,
+    start_y: usize,
+) {
+    let dst_stride = height * PIXEL_STRIDE;
+
+    let cap_y = start_y + BLOCK_SIZE_Y;
+
+    for y in start_y..cap_y {
+        let s_start_y = if FLIP { height - 1 - y } else { y };
+        let start_row_offset_x = s_start_y * row_size + PIXEL_STRIDE * start_x;
+        let end_row = (s_start_y + 1) * row_size;
+        let start_row = &src_row[start_row_offset_x..end_row];
+
+        let target = &mut target[y * PIXEL_STRIDE..];
+        for (x, src) in start_row
+            .chunks_exact(PIXEL_STRIDE)
+            .enumerate()
+            .take(BLOCK_SIZE_X)
+        {
+            let offset = dst_stride
+                * if FLOP {
+                    x + start_x
+                } else {
+                    width - 1 - (x + start_x)
+                };
+            let dst = &mut target[offset..(offset + PIXEL_STRIDE)];
+            if PIXEL_STRIDE == 1 {
+                dst[0] = src[0];
+            } else if PIXEL_STRIDE == 2 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+            } else if PIXEL_STRIDE == 3 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+            } else if PIXEL_STRIDE == 4 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+                dst[3] = src[3];
+            }
+        }
+    }
+}
+
 #[inline]
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn common_process<
@@ -46,8 +106,91 @@ pub(crate) fn common_process<
     take_rows: usize,
 ) {
     let dst_stride = height * PIXEL_STRIDE;
-    
-    for y in start_y..(start_y + take_rows) {
+    let mut working_y = start_y;
+    let cap_y = start_y + take_rows;
+
+    while working_y + 16 < cap_y {
+        let mut x = 0usize;
+
+        while x + 16 < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 16, 16>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 16;
+        }
+
+        while x + 8 < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 8, 16>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 8;
+        }
+
+        while x + 4 < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 4, 16>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 4;
+        }
+
+        while x < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 1, 16>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 1;
+        }
+
+        working_y += 16;
+    }
+
+    while working_y + 8 < cap_y {
+        let mut x = 0usize;
+
+        while x + 8 < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 8, 8>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 8;
+        }
+
+        while x + 4 < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 4, 8>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 4;
+        }
+
+        while x < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 1, 8>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 1;
+        }
+
+        working_y += 8;
+    }
+
+    while working_y + 4 < cap_y {
+        let mut x = 0usize;
+
+        while x + 4 < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 4, 4>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 4;
+        }
+
+        while x < width {
+            common_process_block::<V, FLOP, FLIP, PIXEL_STRIDE, 1, 4>(
+                src_row, row_size, target, width, height, x, working_y,
+            );
+            x += 1;
+        }
+
+        working_y += 4;
+    }
+
+    for y in working_y..cap_y {
         let s_start_y = if FLIP { height - 1 - y } else { y };
         let start_row_offset_x = s_start_y * row_size + PIXEL_STRIDE * start_x;
         let end_row = (s_start_y + 1) * row_size;
@@ -61,6 +204,62 @@ pub(crate) fn common_process<
                 } else {
                     width - 1 - (x + start_x)
                 };
+            let dst = &mut target[offset..(offset + PIXEL_STRIDE)];
+            if PIXEL_STRIDE == 1 {
+                dst[0] = src[0];
+            } else if PIXEL_STRIDE == 2 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+            } else if PIXEL_STRIDE == 3 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+            } else if PIXEL_STRIDE == 4 {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+                dst[3] = src[3];
+            }
+        }
+    }
+}
+
+
+#[inline]
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn common_process_small_blocks<
+    V: Copy,
+    const FLOP: bool,
+    const FLIP: bool,
+    const PIXEL_STRIDE: usize,
+>(
+    src_row: &[V],
+    row_size: usize,
+    target: &mut [V],
+    width: usize,
+    height: usize,
+    start_x: usize,
+    start_y: usize,
+    take_rows: usize,
+) {
+    let dst_stride = height * PIXEL_STRIDE;
+    let mut working_y = start_y;
+    let cap_y = start_y + take_rows;
+    
+    for y in working_y..cap_y {
+        let s_start_y = if FLIP { height - 1 - y } else { y };
+        let start_row_offset_x = s_start_y * row_size + PIXEL_STRIDE * start_x;
+        let end_row = (s_start_y + 1) * row_size;
+        let start_row = &src_row[start_row_offset_x..end_row];
+
+        let target = &mut target[y * PIXEL_STRIDE..];
+        for (x, src) in start_row.chunks_exact(PIXEL_STRIDE).enumerate() {
+            let offset = dst_stride
+                * if FLOP {
+                x + start_x
+            } else {
+                width - 1 - (x + start_x)
+            };
             let dst = &mut target[offset..(offset + PIXEL_STRIDE)];
             if PIXEL_STRIDE == 1 {
                 dst[0] = src[0];

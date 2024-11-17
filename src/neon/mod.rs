@@ -39,7 +39,7 @@ pub(crate) use transpose_16x16_u8::{
 };
 pub(crate) use transpose_4x4_f32::{
     neon_transpose_4x4_f32, neon_transpose_4x4_f32_intl_2, neon_transpose_4x4_f32_intl_3,
-    neon_transpose_4x4_f32_intl_4,
+    neon_transpose_4x4_f32_intl_4, neon_transpose_8x8_f32,
 };
 pub(crate) use transpose_8x8_u16::{
     neon_transpose_8x8_u16, neon_transpose_8x8_u16_intl_2, neon_transpose_8x8_u16_intl_3,

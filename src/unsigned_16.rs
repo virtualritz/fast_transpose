@@ -27,13 +27,13 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
-use crate::common::common_process;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+use crate::common::{common_process, common_process_small_blocks};
+#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 use crate::neon::{
     neon_transpose_8x8_u16, neon_transpose_8x8_u16_intl_2, neon_transpose_8x8_u16_intl_3,
     neon_transpose_8x8_u16_intl_4,
 };
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
 use crate::sse::{
     sse_transpose_8x8_u16, sse_transpose_8x8_u16_intl2, sse_transpose_8x8_u16_intl3,
     sse_transpose_8x8_u16_intl4,
@@ -128,7 +128,7 @@ pub fn transpose_rgba16(
     }
 }
 
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
     matrix: &[u16],
     target: &mut [u16],
@@ -193,7 +193,7 @@ fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
         }
 
         if x < width {
-            common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
+            common_process_small_blocks::<u16, FLOP, FLIP, PIXEL_STRIDE>(
                 matrix, row_size, target, width, height, x, y, 8,
             );
         }
@@ -215,7 +215,7 @@ fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
     Ok(())
 }
 
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
 fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
     matrix: &[u16],
     target: &mut [u16],
@@ -285,7 +285,7 @@ fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
             }
 
             if x < width {
-                common_process::<u16, FLOP, FLIP, PIXEL_STRIDE>(
+                common_process_small_blocks::<u16, FLOP, FLIP, PIXEL_STRIDE>(
                     matrix, row_size, target, width, height, x, y, 8,
                 );
             }
@@ -309,8 +309,8 @@ fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
 }
 
 #[cfg(not(any(
-    all(target_arch = "aarch64", target_feature = "neon"),
-    any(target_arch = "x86_64", target_arch = "x86")
+    all(target_arch = "aarch64", target_feature = "neon", feature = "std"),
+    all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std")
 )))]
 fn transpose_u16_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
     matrix: &[u16],

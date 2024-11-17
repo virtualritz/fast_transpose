@@ -28,13 +28,13 @@
  */
 #![forbid(unsafe_code)]
 
-use crate::common::common_process;
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+use crate::common::{common_process, common_process_small_blocks};
+#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 use crate::neon::{
     neon_transpose_4x4_f32, neon_transpose_4x4_f32_intl_2, neon_transpose_4x4_f32_intl_3,
-    neon_transpose_4x4_f32_intl_4
+    neon_transpose_4x4_f32_intl_4, neon_transpose_8x8_f32,
 };
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
 use crate::sse::{
     sse_transpose_4x4_f32, sse_transpose_4x4_f32_intl_2, sse_transpose_4x4_f32_intl_3,
     sse_transpose_4x4_f32_intl_4,
@@ -129,7 +129,7 @@ pub fn transpose_rgba_f32(
     }
 }
 
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std"))]
 fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
     matrix: &[f32],
     target: &mut [f32],
@@ -199,7 +199,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
             }
 
             if x < width {
-                common_process::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+                common_process_small_blocks::<f32, FLOP, FLIP, PIXEL_STRIDE>(
                     matrix, row_size, target, width, height, x, y, 4,
                 );
             }
@@ -222,7 +222,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
     Ok(())
 }
 
-#[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", target_feature = "neon", feature = "std"))]
 fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
     matrix: &[f32],
     target: &mut [f32],
@@ -241,7 +241,40 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
     let row_size = width * PIXEL_STRIDE;
 
     let mut y = 0usize;
-    
+
+    if PIXEL_STRIDE == 1 {
+        while y + 8 < height {
+            let source_row = if FLIP {
+                &matrix[(height - 8 - y) * row_size..((height - y) * row_size)]
+            } else {
+                &matrix[y * row_size..((y + 8) * row_size)]
+            };
+            let start_y = y * PIXEL_STRIDE;
+            let mut x = 0usize;
+
+            while x + 8 < width {
+                let dst_stride = height * PIXEL_STRIDE;
+                let dst =
+                    &mut target[(start_y + dst_stride * if FLOP { x } else { width - 8 - x })..];
+                neon_transpose_8x8_f32::<FLOP, FLIP>(
+                    &source_row[(x * PIXEL_STRIDE)..],
+                    row_size,
+                    dst,
+                    dst_stride,
+                );
+                x += 8;
+            }
+
+            if x < width {
+                common_process_small_blocks::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+                    matrix, row_size, target, width, height, x, y, 8,
+                );
+            }
+
+            y += 8;
+        }
+    }
+
     while y + 4 < height {
         let source_row = if FLIP {
             &matrix[(height - 4 - y) * row_size..((height - y) * row_size)]
@@ -287,7 +320,7 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
         }
 
         if x < width {
-            common_process::<f32, FLOP, FLIP, PIXEL_STRIDE>(
+            common_process_small_blocks::<f32, FLOP, FLIP, PIXEL_STRIDE>(
                 matrix, row_size, target, width, height, x, y, 4,
             );
         }
@@ -310,8 +343,8 @@ fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: us
 }
 
 #[cfg(not(any(
-    all(target_arch = "aarch64", target_feature = "neon"),
-    any(target_arch = "x86_64", target_arch = "x86")
+    all(target_arch = "aarch64", target_feature = "neon", feature = "std"),
+    all(any(target_arch = "x86_64", target_arch = "x86"), feature = "std")
 )))]
 fn transpose_f32_impl<const FLOP: bool, const FLIP: bool, const PIXEL_STRIDE: usize>(
     matrix: &[f32],

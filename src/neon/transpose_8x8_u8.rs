@@ -105,7 +105,7 @@ pub(crate) fn neon_transpose_8x8<const FLOP: bool, const FLIP: bool>(
 
         if FLOP {
             vst1_u8(dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(), v0.0);
-            vst1_u8( dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(), v0.1);
+            vst1_u8(dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(), v0.1);
             vst1_u8(dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(), v0.2);
             vst1_u8(dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(), v0.3);
             vst1_u8(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), v1.0);
@@ -157,23 +157,71 @@ pub(crate) fn neon_transpose_8x8_intl_3<const FLOP: bool, const FLIP: bool>(
         );
 
         if FLOP {
-            vst3_u8(dst.get_unchecked_mut(0..).as_mut_ptr(), uint8x8x3_t(r0.0, g0.0, b0.0));
-            vst3_u8(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.1, g0.1, b0.1));
-            vst3_u8(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.2, g0.2, b0.2));
-            vst3_u8(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.3, g0.3, b0.3));
-            vst3_u8(dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.0, g1.0, b1.0));
-            vst3_u8(dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.1, g1.1, b1.1));
-            vst3_u8(dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.2, g1.2, b1.2));
-            vst3_u8(dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.3, g1.3, b1.3));
+            vst3_u8(
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
+                uint8x8x3_t(r0.0, g0.0, b0.0),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.1, g0.1, b0.1),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.2, g0.2, b0.2),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.3, g0.3, b0.3),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.0, g1.0, b1.0),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.1, g1.1, b1.1),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.2, g1.2, b1.2),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.3, g1.3, b1.3),
+            );
         } else {
-            vst3_u8(dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.0, g0.0, b0.0));
-            vst3_u8(dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.1, g0.1, b0.1));
-            vst3_u8(dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.2, g0.2, b0.2));
-            vst3_u8(dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r0.3, g0.3, b0.3));
-            vst3_u8(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.0, g1.0, b1.0));
-            vst3_u8(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.1, g1.1, b1.1));
-            vst3_u8(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), uint8x8x3_t(r1.2, g1.2, b1.2));
-            vst3_u8(dst.get_unchecked_mut(0..).as_mut_ptr(), uint8x8x3_t(r1.3, g1.3, b1.3));
+            vst3_u8(
+                dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.0, g0.0, b0.0),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.1, g0.1, b0.1),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.2, g0.2, b0.2),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r0.3, g0.3, b0.3),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.0, g1.0, b1.0),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.1, g1.1, b1.1),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr(),
+                uint8x8x3_t(r1.2, g1.2, b1.2),
+            );
+            vst3_u8(
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
+                uint8x8x3_t(r1.3, g1.3, b1.3),
+            );
         }
     }
 }
@@ -205,23 +253,71 @@ pub(crate) fn neon_transpose_8x8_intl_2<const FLOP: bool, const FLIP: bool>(
         );
 
         if FLOP {
-            vst2_u8(dst.get_unchecked_mut(0..).as_mut_ptr(), uint8x8x2_t(r0.0, g0.0));
-            vst2_u8(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.1, g0.1));
-            vst2_u8(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.2, g0.2));
-            vst2_u8(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.3, g0.3));
-            vst2_u8(dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.0, g1.0));
-            vst2_u8(dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.1, g1.1));
-            vst2_u8(dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.2, g1.2));
-            vst2_u8(dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.3, g1.3));
+            vst2_u8(
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
+                uint8x8x2_t(r0.0, g0.0),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.1, g0.1),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.2, g0.2),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.3, g0.3),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.0, g1.0),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.1, g1.1),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.2, g1.2),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.3, g1.3),
+            );
         } else {
-            vst2_u8(dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.0, g0.0));
-            vst2_u8(dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.1, g0.1));
-            vst2_u8(dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.2, g0.2));
-            vst2_u8(dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r0.3, g0.3));
-            vst2_u8(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.0, g1.0));
-            vst2_u8(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.1, g1.1));
-            vst2_u8(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), uint8x8x2_t(r1.2, g1.2));
-            vst2_u8(dst.get_unchecked_mut(0..).as_mut_ptr(), uint8x8x2_t(r1.3, g1.3));
+            vst2_u8(
+                dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.0, g0.0),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.1, g0.1),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.2, g0.2),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r0.3, g0.3),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.0, g1.0),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.1, g1.1),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr(),
+                uint8x8x2_t(r1.2, g1.2),
+            );
+            vst2_u8(
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
+                uint8x8x2_t(r1.3, g1.3),
+            );
         }
     }
 }
@@ -263,8 +359,14 @@ pub(crate) fn neon_transpose_8x8_intl_4<const FLOP: bool, const FLIP: bool>(
         );
 
         if FLOP {
-            vst4_u8(dst.get_unchecked_mut(0..).as_mut_ptr(), uint8x8x4_t(r0.0, g0.0, b0.0, a0.0));
-            vst4_u8(dst.get_unchecked_mut( dst_stride..).as_mut_ptr(), uint8x8x4_t(r0.1, g0.1, b0.1, a0.1));
+            vst4_u8(
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
+                uint8x8x4_t(r0.0, g0.0, b0.0, a0.0),
+            );
+            vst4_u8(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr(),
+                uint8x8x4_t(r0.1, g0.1, b0.1, a0.1),
+            );
             vst4_u8(
                 dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(),
                 uint8x8x4_t(r0.2, g0.2, b0.2, a0.2),
@@ -314,8 +416,14 @@ pub(crate) fn neon_transpose_8x8_intl_4<const FLOP: bool, const FLIP: bool>(
                 dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(),
                 uint8x8x4_t(r1.1, g1.1, b1.1, a1.1),
             );
-            vst4_u8(dst.get_unchecked_mut( dst_stride..).as_mut_ptr(), uint8x8x4_t(r1.2, g1.2, b1.2, a1.2));
-            vst4_u8(dst.get_unchecked_mut(0..).as_mut_ptr(), uint8x8x4_t(r1.3, g1.3, b1.3, a1.3));
+            vst4_u8(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr(),
+                uint8x8x4_t(r1.2, g1.2, b1.2, a1.2),
+            );
+            vst4_u8(
+                dst.get_unchecked_mut(0..).as_mut_ptr(),
+                uint8x8x4_t(r1.3, g1.3, b1.3, a1.3),
+            );
         }
     }
 }
