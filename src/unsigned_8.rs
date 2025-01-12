@@ -27,6 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
+use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
 use crate::utils::FlopMode;
 use crate::{transpose_arbitrary, FlipMode, TransposeError};
 
@@ -35,7 +36,9 @@ use crate::{transpose_arbitrary, FlipMode, TransposeError};
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -44,14 +47,25 @@ use crate::{transpose_arbitrary, FlipMode, TransposeError};
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_plane(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    transpose_arbitrary(matrix, target, width, height, flip_mode, flop_mode)
+    transpose_arbitrary(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        flip_mode,
+        flop_mode,
+    )
 }
 
 /// Performs plane with alpha image transposition
@@ -59,7 +73,9 @@ pub fn transpose_plane(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -68,24 +84,20 @@ pub fn transpose_plane(
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_plane_with_alpha(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u8; 2]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u8; 2]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    transpose_arbitrary(
-        casted_source,
-        casted_target,
+    transpose_arbitrary_grouped::<u8, 2>(
+        input,
+        input_stride,
+        output,
+        output_stride,
         width,
         height,
         flip_mode,
@@ -98,7 +110,9 @@ pub fn transpose_plane_with_alpha(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -107,24 +121,20 @@ pub fn transpose_plane_with_alpha(
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_rgb(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u8; 3]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u8; 3]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    transpose_arbitrary(
-        casted_source,
-        casted_target,
+    transpose_arbitrary_grouped::<u8, 3>(
+        input,
+        input_stride,
+        output,
+        output_stride,
         width,
         height,
         flip_mode,
@@ -137,7 +147,9 @@ pub fn transpose_rgb(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -146,24 +158,20 @@ pub fn transpose_rgb(
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_rgba(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u8; 4]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u8; 4]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    transpose_arbitrary(
-        casted_source,
-        casted_target,
+    transpose_arbitrary_grouped::<u8, 4>(
+        input,
+        input_stride,
+        output,
+        output_stride,
         width,
         height,
         flip_mode,

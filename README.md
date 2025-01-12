@@ -1,6 +1,13 @@
 # Fast image transpose
 
-Fast and simple image rotating in Rust with flipping and flopping in-place.
+Fast and simple image rotating in Rust with flipping and flopping in-place and rotating by 180.
+
+## Supports:
+- Flipping ( Horizontal Mirror )
+- Flopping ( Vertical Mirror )
+- Transposing ( Rotate by 90 )
+- Rotate by 180
+- Rotate by 270
 
 ### Adding to project
 

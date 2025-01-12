@@ -44,7 +44,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_rgb(
                 &img,
+                dimensions.0 as usize * 3,
                 &mut transposed,
+                dimensions.1 as usize * 3,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
@@ -86,7 +88,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_rgb16(
                 &img16,
+                dimensions.0 as usize * 3,
                 &mut transposed,
+                dimensions.1 as usize * 3,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
@@ -128,7 +132,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_rgb_f32(
                 &image_f32,
+                dimensions.0 as usize * 3,
                 &mut transposed,
+                dimensions.1 as usize * 3,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,

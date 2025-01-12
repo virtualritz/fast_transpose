@@ -27,6 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
+use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
 use crate::{transpose_arbitrary, FlipMode, FlopMode, TransposeError};
 
 /// Performs plane image transposition
@@ -34,7 +35,9 @@ use crate::{transpose_arbitrary, FlipMode, FlopMode, TransposeError};
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -43,14 +46,25 @@ use crate::{transpose_arbitrary, FlipMode, FlopMode, TransposeError};
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_plane_f32(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    transpose_arbitrary(matrix, target, width, height, flip_mode, flop_mode)
+    transpose_arbitrary(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        flip_mode,
+        flop_mode,
+    )
 }
 
 /// Performs plane with alpha image transposition
@@ -58,7 +72,9 @@ pub fn transpose_plane_f32(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -67,24 +83,20 @@ pub fn transpose_plane_f32(
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_plane_f32_with_alpha(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[f32; 2]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[f32; 2]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    transpose_arbitrary(
-        casted_source,
-        casted_target,
+    transpose_arbitrary_grouped::<f32, 2>(
+        input,
+        input_stride,
+        output,
+        output_stride,
         width,
         height,
         flip_mode,
@@ -97,7 +109,9 @@ pub fn transpose_plane_f32_with_alpha(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -106,24 +120,20 @@ pub fn transpose_plane_f32_with_alpha(
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_rgb_f32(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[f32; 3]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[f32; 3]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    transpose_arbitrary(
-        casted_source,
-        casted_target,
+    transpose_arbitrary_grouped::<f32, 3>(
+        input,
+        input_stride,
+        output,
+        output_stride,
         width,
         height,
         flip_mode,
@@ -136,7 +146,9 @@ pub fn transpose_rgb_f32(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Image width
 /// * `height`: Image height
 /// * `flip_mode`: see [FlipMode]
@@ -145,24 +157,20 @@ pub fn transpose_rgb_f32(
 /// returns: Result<(), TransposeError>
 ///
 pub fn transpose_rgba_f32(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[f32; 4]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[f32; 4]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    transpose_arbitrary(
-        casted_source,
-        casted_target,
+    transpose_arbitrary_grouped::<f32, 4>(
+        input,
+        input_stride,
+        output,
+        output_stride,
         width,
         height,
         flip_mode,

@@ -28,8 +28,9 @@
  */
 use crate::{FlipMode, FlopMode, TransposeError};
 
+#[allow(clippy::too_many_arguments)]
 #[inline(always)]
-fn transpose_block<V: Copy, const FLOP: bool, const FLIP: bool>(
+fn transpose_block<V: Copy, const N: usize, const FLOP: bool, const FLIP: bool>(
     input: &[V],
     input_stride: usize,
     output: &mut [V],
@@ -49,26 +50,33 @@ fn transpose_block<V: Copy, const FLOP: bool, const FLIP: bool>(
             let input_y = if FLIP { height - 1 - y } else { y };
             let output_x = if FLOP { x } else { width - 1 - x };
 
-            let input_index = x + input_y * input_stride;
-            let output_index = y + output_x * output_stride;
+            let input_index = x * N + input_y * input_stride;
+            let output_index = y * N + output_x * output_stride;
 
             #[cfg(feature = "unsafe")]
             {
                 unsafe {
-                    *output.get_unchecked_mut(output_index) = *input.get_unchecked(input_index);
+                    for i in 0..N {
+                        *output.get_unchecked_mut(output_index + i) =
+                            *input.get_unchecked(input_index + i);
+                    }
                 }
             }
             #[cfg(not(feature = "unsafe"))]
             {
-                output[output_index] = input[input_index];
+                for i in 0..N {
+                    output[output_index + i] = input[input_index + i];
+                }
             }
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 #[inline(always)]
 fn transpose_block_segmented<
     T: Copy,
+    const N: usize,
     const FLOP: bool,
     const FLIP: bool,
     const BLOCK_SIZE_X: usize,
@@ -93,25 +101,31 @@ fn transpose_block_segmented<
                 let input_y = if FLIP { height - 1 - y } else { y };
                 let output_x = if FLOP { x } else { width - 1 - x };
 
-                let input_index = x + input_y * input_stride;
-                let output_index = y + output_x * output_stride;
+                let input_index = x * N + input_y * input_stride;
+                let output_index = y * N + output_x * output_stride;
 
                 #[cfg(feature = "unsafe")]
                 {
                     unsafe {
-                        *output.get_unchecked_mut(output_index) = *input.get_unchecked(input_index);
+                        for i in 0..N {
+                            *output.get_unchecked_mut(output_index + i) =
+                                *input.get_unchecked(input_index + i);
+                        }
                     }
                 }
                 #[cfg(not(feature = "unsafe"))]
                 {
-                    output[output_index] = input[input_index];
+                    for i in 0..N {
+                        output[output_index + i] = input[input_index + i];
+                    }
                 }
             }
         }
     }
 }
 
-fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
+#[allow(clippy::too_many_arguments)]
+fn trs_arb_grouped<V: Copy, const N: usize, const FLOP: bool, const FLIP: bool>(
     input: &[V],
     input_stride: usize,
     output: &mut [V],
@@ -136,7 +150,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
 
         for y_block in 0..y_block_count {
             for x_block in 0..x_block_count {
-                transpose_block_segmented::<V, FLOP, FLIP, BLOCK_SIZE, BLOCK_SIZE>(
+                transpose_block_segmented::<V, N, FLOP, FLIP, BLOCK_SIZE, BLOCK_SIZE>(
                     input,
                     input_stride,
                     output,
@@ -149,7 +163,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             }
 
             if remainder_x > 0 {
-                transpose_block::<V, FLOP, FLIP>(
+                transpose_block::<V, N, FLOP, FLIP>(
                     input,
                     input_stride,
                     output,
@@ -166,7 +180,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
 
         if remainder_y > 0 {
             for x_block in 0..x_block_count {
-                transpose_block::<V, FLOP, FLIP>(
+                transpose_block::<V, N, FLOP, FLIP>(
                     input,
                     input_stride,
                     output,
@@ -181,7 +195,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             }
 
             if remainder_x > 0 {
-                transpose_block::<V, FLOP, FLIP>(
+                transpose_block::<V, N, FLOP, FLIP>(
                     input,
                     input_stride,
                     output,
@@ -196,7 +210,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             }
         }
     } else if length_y >= length_x {
-        transpose_arbitrary_impl::<V, FLOP, FLIP>(
+        trs_arb_grouped::<V, N, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -208,7 +222,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             width,
             height,
         );
-        transpose_arbitrary_impl::<V, FLOP, FLIP>(
+        trs_arb_grouped::<V, N, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -221,7 +235,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             height,
         );
     } else {
-        transpose_arbitrary_impl::<V, FLOP, FLIP>(
+        trs_arb_grouped::<V, N, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -233,7 +247,7 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
             width,
             height,
         );
-        transpose_arbitrary_impl::<V, FLOP, FLIP>(
+        trs_arb_grouped::<V, N, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -263,7 +277,8 @@ fn transpose_arbitrary_impl<V: Copy, const FLOP: bool, const FLIP: bool>(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn transpose_arbitrary<V: Copy>(
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn transpose_arbitrary_grouped<V: Copy, const N: usize>(
     input: &[V],
     input_stride: usize,
     output: &mut [V],
@@ -282,16 +297,16 @@ pub fn transpose_arbitrary<V: Copy>(
     if output.len() != output_stride * width {
         return Err(TransposeError::MismatchDimensions);
     }
-    if input_stride < width {
+    if input_stride < width * N {
         return Err(TransposeError::MismatchDimensions);
     }
-    if output_stride < height {
+    if output_stride < height * N {
         return Err(TransposeError::MismatchDimensions);
     }
 
     match flip_mode {
         FlipMode::NoFlip => match flop_mode {
-            FlopMode::NoFlop => transpose_arbitrary_impl::<V, false, false>(
+            FlopMode::NoFlop => trs_arb_grouped::<V, N, false, false>(
                 input,
                 input_stride,
                 output,
@@ -303,7 +318,7 @@ pub fn transpose_arbitrary<V: Copy>(
                 width,
                 height,
             ),
-            FlopMode::Flop => transpose_arbitrary_impl::<V, true, false>(
+            FlopMode::Flop => trs_arb_grouped::<V, N, true, false>(
                 input,
                 input_stride,
                 output,
@@ -317,7 +332,7 @@ pub fn transpose_arbitrary<V: Copy>(
             ),
         },
         FlipMode::Flip => match flop_mode {
-            FlopMode::NoFlop => transpose_arbitrary_impl::<V, false, true>(
+            FlopMode::NoFlop => trs_arb_grouped::<V, N, false, true>(
                 input,
                 input_stride,
                 output,
@@ -329,7 +344,7 @@ pub fn transpose_arbitrary<V: Copy>(
                 width,
                 height,
             ),
-            FlopMode::Flop => transpose_arbitrary_impl::<V, true, true>(
+            FlopMode::Flop => trs_arb_grouped::<V, N, true, true>(
                 input,
                 input_stride,
                 output,

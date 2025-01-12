@@ -28,7 +28,10 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_transpose::{transpose_plane, transpose_plane16, transpose_plane_f32, FlipMode, FlopMode};
+use fast_transpose::{
+    flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane_f32, FlipMode,
+    FlopMode,
+};
 use image::{DynamicImage, ImageReader};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -39,18 +42,124 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let img = img.to_luma8();
     let dimensions = img.dimensions();
     let components = 1;
-    c.bench_function("Fast transpose: Plane u8", |b| {
+
+    c.bench_function("FT Rotate 90: Plane u8", |b| {
         let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
         b.iter(|| {
             transpose_plane(
                 &img,
+                dimensions.0 as usize,
                 &mut transposed,
+                dimensions.1 as usize,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
                 FlopMode::NoFlop,
             )
             .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 90: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_RotatePlane90(
+                img.as_ptr(),
+                dimensions.0 as i32,
+                transposed.as_mut_ptr(),
+                dimensions.1 as i32,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+            );
+        });
+    });
+
+    c.bench_function("FT Rotate 180: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            rotate180_plane(
+                &img,
+                dimensions.0 as usize,
+                &mut transposed,
+                dimensions.0 as usize,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 180: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_RotatePlane180(
+                img.as_ptr(),
+                dimensions.0 as i32,
+                transposed.as_mut_ptr(),
+                dimensions.0 as i32,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+            );
+        });
+    });
+
+    c.bench_function("FT Rotate 270: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            transpose_plane(
+                &img,
+                dimensions.0 as usize,
+                &mut transposed,
+                dimensions.1 as usize,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+                FlipMode::Flip,
+                FlopMode::Flop,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 270: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_RotatePlane270(
+                img.as_ptr(),
+                dimensions.0 as i32,
+                transposed.as_mut_ptr(),
+                dimensions.1 as i32,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+            );
+        });
+    });
+
+    c.bench_function("FT Mirror: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            flip_plane(
+                &img,
+                dimensions.0 as usize,
+                &mut transposed,
+                dimensions.0 as usize,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Mirror: Plane u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_MirrorPlane(
+                img.as_ptr(),
+                dimensions.0 as i32,
+                transposed.as_mut_ptr(),
+                dimensions.0 as i32,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+            );
         });
     });
 
@@ -81,7 +190,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_plane16(
                 &img16,
+                dimensions.0 as usize,
                 &mut transposed,
+                dimensions.1 as usize,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
@@ -122,7 +233,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_plane_f32(
                 &data,
+                dimensions.0 as usize,
                 &mut transposed,
+                dimensions.1 as usize,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,

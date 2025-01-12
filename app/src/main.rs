@@ -27,8 +27,8 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use fast_transpose::{
-    flip_arbitrary, flop_arbitrary, transpose_arbitrary, transpose_plane_f32, transpose_rgb,
-    FlipMode, FlopMode,
+    flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
+    transpose_plane_f32, transpose_rgb, FlipMode, FlopMode,
 };
 use image::{ColorType, GenericImageView, ImageReader};
 use std::time::Instant;
@@ -50,6 +50,8 @@ fn main() {
     let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
     let mut transposed_rgb = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
 
+    let rgb_bytes = img.to_rgb8();
+
     let rgb_set = img
         .as_bytes()
         .chunks_exact(3)
@@ -69,27 +71,31 @@ fn main() {
 
     let start = Instant::now();
 
-    flop_arbitrary(
-        &rgb_set,
-        &mut transposed_rgb,
-        dimensions.0 as usize,
-        dimensions.1 as usize,
-    )
-    .unwrap();
-    //
-    // transpose_arbitrary(
-    //     &rgb_set,
-    //     &mut transposed_rgb,
+    // rotate180_rgb(
+    //     &rgb_bytes,
+    //     img.dimensions().0 as usize * 3,
+    //     &mut transposed,
+    //     img.dimensions().0 as usize * 3,
     //     dimensions.0 as usize,
     //     dimensions.1 as usize,
-    //     FlipMode::NoFlip,
-    //     FlopMode::NoFlop,
     // )
     // .unwrap();
 
+    transpose_rgb(
+        &rgb_bytes,
+        dimensions.0 as usize * 3,
+        &mut transposed,
+        dimensions.1 as usize * 3,
+        dimensions.0 as usize,
+        dimensions.1 as usize,
+        FlipMode::Flip,
+        FlopMode::Flop,
+    )
+    .unwrap();
+
     println!("Exec time {:?}", start.elapsed());
 
-    transposed = bytemuck::cast_vec(transposed_rgb);
+    // transposed = bytemuck::cast_vec(transposed_rgb);
 
     // let transposed = transposed
     //     .iter()
@@ -109,8 +115,8 @@ fn main() {
         image::save_buffer(
             "transposed.jpg",
             &transposed,
-            dimensions.0,
             dimensions.1,
+            dimensions.0,
             image::ExtendedColorType::Rgb8,
         )
         .unwrap();
