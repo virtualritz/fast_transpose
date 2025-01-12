@@ -26,12 +26,15 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#![allow(clippy::too_many_arguments)]
 #![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
-#[deny(unreachable_pub)]
+#![deny(unreachable_pub)]
 mod flip;
 mod float_32;
 mod flop;
+mod rotate180;
 mod transpose_arbitrary;
+mod transpose_arbitrary_group;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
@@ -48,6 +51,11 @@ pub use flop::{
     flop_arbitrary, flop_plane, flop_plane16, flop_plane16_with_alpha, flop_plane_f32,
     flop_plane_f32_with_alpha, flop_plane_with_alpha, flop_rgb, flop_rgb16, flop_rgb_f32,
     flop_rgba, flop_rgba16, flop_rgba_f32,
+};
+pub use rotate180::{
+    rotate180_arbitrary, rotate180_plane, rotate180_plane16, rotate180_plane16_with_alpha,
+    rotate180_plane_f32, rotate180_plane_f32_with_alpha, rotate180_plane_with_alpha, rotate180_rgb,
+    rotate180_rgb16, rotate180_rgb_f32, rotate180_rgba, rotate180_rgba16, rotate180_rgba_f32,
 };
 pub use transpose_arbitrary::transpose_arbitrary;
 pub use unsigned_16::{

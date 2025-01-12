@@ -27,41 +27,253 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 use crate::TransposeError;
+use bytemuck::{AnyBitPattern, NoUninit, Pod};
+
+trait Flopper<V: Copy> {
+    fn flop(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    );
+}
+
+macro_rules! flop_grouped_copy {
+    ($input:expr, $input_stride:expr,$output:expr, $output_stride:expr, $width:expr, $cn: expr) => {
+        for (dst, src) in $output
+            .chunks_exact_mut($output_stride)
+            .rev()
+            .zip($input.chunks_exact($input_stride))
+        {
+            let dst = &mut dst[0..$width * $cn];
+            let src = &src[0..$width * $cn];
+            let dst_casted: &mut [[V; $cn]] = bytemuck::cast_slice_mut(dst);
+            let src_casted: &[[V; $cn]] = bytemuck::cast_slice(src);
+            for (dst, src) in dst_casted.iter_mut().zip(src_casted.iter()) {
+                *dst = *src;
+            }
+        }
+    };
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct CommonGroupedFlopper<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize>
+where
+    [V; N]: Pod,
+{
+    _phantom: std::marker::PhantomData<V>,
+}
+
+impl<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Flopper<V>
+    for CommonGroupedFlopper<V, N>
+where
+    [V; N]: Pod,
+{
+    fn flop(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    ) {
+        flop_grouped_copy!(input, input_stride, output, output_stride, width, N);
+    }
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct CommonFlopper<V: Copy> {
+    _phantom: std::marker::PhantomData<V>,
+}
+
+impl<V: Copy> Flopper<V> for CommonFlopper<V> {
+    fn flop(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    ) {
+        for (dst, src) in output
+            .chunks_exact_mut(output_stride)
+            .rev()
+            .zip(input.chunks_exact(input_stride))
+        {
+            let dst = &mut dst[0..width];
+            let src = &src[0..width];
+            for (dst, src) in dst.iter_mut().zip(src.iter()) {
+                *dst = *src;
+            }
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct FlopperGroupedFactory<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
+    _phantom: std::marker::PhantomData<V>,
+}
+
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[derive(Debug, Copy, Clone, Default)]
+struct FlopperAvx2GroupedFactory<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
+    _phantom: std::marker::PhantomData<V>,
+}
+
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize>
+    FlopperAvx2GroupedFactory<V, N>
+where
+    V: Default,
+    [V; N]: Pod,
+{
+    #[target_feature(enable = "avx2")]
+    unsafe fn flop_impl(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    ) {
+        flop_grouped_copy!(input, input_stride, output, output_stride, width, N);
+    }
+}
+
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Flopper<V>
+    for FlopperAvx2GroupedFactory<V, N>
+where
+    V: Default,
+    [V; N]: Pod,
+{
+    fn flop(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    ) {
+        unsafe { self.flop_impl(input, input_stride, output, output_stride, width) }
+    }
+}
+
+impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize>
+    FlopperGroupedFactory<V, N>
+where
+    V: Default,
+    [V; N]: Pod,
+{
+    #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+    fn make_flipper(&self) -> Box<dyn Flopper<V>> {
+        if std::arch::is_x86_feature_detected!("avx2") {
+            return Box::new(FlopperAvx2GroupedFactory::<V, N>::default());
+        }
+        Box::new(CommonGroupedFlopper::<V, N>::default())
+    }
+
+    #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+    fn make_flipper(&self) -> Box<dyn Flopper<V>> {
+        Box::new(CommonGroupedFlopper::<V, N>::default())
+    }
+
+    #[cfg(not(any(
+        all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
+        all(target_arch = "aarch64", feature = "unsafe")
+    )))]
+    fn make_flipper(&self) -> Box<dyn Flopper<V>> {
+        Box::new(CommonGroupedFlopper::<V, N>::default())
+    }
+}
 
 /// Performs arbitrary flopping
 ///
 /// # Arguments
 ///
-/// * `input`: Input date
+/// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
+/// * `output_stride`: Output data stride
 /// * `width`: Array width
 /// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flop_arbitrary<V: Copy>(
+pub fn flop_arbitrary<V: Copy + Default>(
     input: &[V],
+    input_stride: usize,
     output: &mut [V],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
     if input.len() != output.len() {
         return Err(TransposeError::MismatchDimensions);
     }
-
-    if input.len() != width * height {
+    if input.len() != input_stride * height {
+        return Err(TransposeError::MismatchDimensions);
+    }
+    if output.len() != output_stride * height {
+        return Err(TransposeError::MismatchDimensions);
+    }
+    if input_stride < width {
+        return Err(TransposeError::MismatchDimensions);
+    }
+    if output_stride < width {
         return Err(TransposeError::MismatchDimensions);
     }
 
-    for (dst, src) in output
-        .chunks_exact_mut(width)
-        .rev()
-        .zip(input.chunks_exact(width))
-    {
-        for (dst, src) in dst.iter_mut().zip(src.iter()) {
-            *dst = *src;
-        }
+    let common_flopper = CommonFlopper::default();
+    common_flopper.flop(input, input_stride, output, output_stride, width);
+
+    Ok(())
+}
+
+/// Performs arbitrary flopping for groups
+///
+/// # Arguments
+///
+/// * `input`: Input data
+/// * `input_stride`: Input data stride
+/// * `output`: Output data
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
+///
+/// returns: Result<(), TransposeError>
+///
+fn flop_arbitrary_grouped<V: Copy + Default + Pod, const N: usize>(
+    input: &[V],
+    input_stride: usize,
+    output: &mut [V],
+    output_stride: usize,
+    width: usize,
+    height: usize,
+) -> Result<(), TransposeError>
+where
+    [V; N]: Pod,
+{
+    if input.len() != output.len() {
+        return Err(TransposeError::MismatchDimensions);
     }
+    if input.len() != input_stride * height {
+        return Err(TransposeError::MismatchDimensions);
+    }
+    if output.len() != output_stride * height {
+        return Err(TransposeError::MismatchDimensions);
+    }
+    if input_stride < width * N {
+        return Err(TransposeError::MismatchDimensions);
+    }
+    if output_stride < width * N {
+        return Err(TransposeError::MismatchDimensions);
+    }
+
+    let flopper = FlopperGroupedFactory::default().make_flipper();
+    flopper.flop(input, input_stride, output, output_stride, width);
 
     Ok(())
 }
@@ -71,19 +283,23 @@ pub fn flop_arbitrary<V: Copy>(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_plane(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flop_arbitrary(matrix, target, width, height)
+    flop_arbitrary(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs plane with alpha flopping
@@ -91,27 +307,23 @@ pub fn flop_plane(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_plane_with_alpha(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u8; 2]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u8; 2]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<u8, 2>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs RGB image flopping
@@ -119,27 +331,23 @@ pub fn flop_plane_with_alpha(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_rgb(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u8; 3]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u8; 3]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<u8, 3>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs RGBA image flopping
@@ -147,27 +355,23 @@ pub fn flop_rgb(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_rgba(
-    matrix: &[u8],
-    target: &mut [u8],
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u8; 4]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u8; 4]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<u8, 4>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs plane image flopping
@@ -175,19 +379,23 @@ pub fn flop_rgba(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_plane16(
-    matrix: &[u16],
-    target: &mut [u16],
+    input: &[u16],
+    input_stride: usize,
+    output: &mut [u16],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flop_arbitrary(matrix, target, width, height)
+    flop_arbitrary(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs plane with alpha image flopping
@@ -195,27 +403,23 @@ pub fn flop_plane16(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_plane16_with_alpha(
-    matrix: &[u16],
-    target: &mut [u16],
+    input: &[u16],
+    input_stride: usize,
+    output: &mut [u16],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u16; 2]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u16; 2]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<u16, 2>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs RGB image flopping
@@ -223,27 +427,23 @@ pub fn flop_plane16_with_alpha(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_rgb16(
-    matrix: &[u16],
-    target: &mut [u16],
+    input: &[u16],
+    input_stride: usize,
+    output: &mut [u16],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u16; 3]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u16; 3]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<u16, 3>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs RGBA image flopping
@@ -251,27 +451,23 @@ pub fn flop_rgb16(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_rgba16(
-    matrix: &[u16],
-    target: &mut [u16],
+    input: &[u16],
+    input_stride: usize,
+    output: &mut [u16],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[u16; 4]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[u16; 4]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<u16, 4>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs plane image flopping
@@ -279,19 +475,23 @@ pub fn flop_rgba16(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_plane_f32(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flop_arbitrary(matrix, target, width, height)
+    flop_arbitrary(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs plane with alpha image flopping
@@ -299,29 +499,23 @@ pub fn flop_plane_f32(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
-/// * `flop_mode`: see [FlipMode]
-/// * `flop_mode`: see [FlopMode]
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_plane_f32_with_alpha(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[f32; 2]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[f32; 2]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<f32, 2>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs RGB image flopping
@@ -329,27 +523,23 @@ pub fn flop_plane_f32_with_alpha(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_rgb_f32(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[f32; 3]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[f32; 3]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<f32, 3>(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs RGBA image flopping
@@ -357,25 +547,21 @@ pub fn flop_rgb_f32(
 /// # Arguments
 ///
 /// * `input`: Input data
+/// * `input_stride`: Input data stride
 /// * `output`: Output data
-/// * `width`: Image width
-/// * `height`: Image height
+/// * `output_stride`: Output data stride
+/// * `width`: Array width
+/// * `height`: Array height
 ///
 /// returns: Result<(), TransposeError>
 ///
 pub fn flop_rgba_f32(
-    matrix: &[f32],
-    target: &mut [f32],
+    input: &[f32],
+    input_stride: usize,
+    output: &mut [f32],
+    output_stride: usize,
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    let casted_source: &[[f32; 4]] = match bytemuck::try_cast_slice(matrix) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    let casted_target: &mut [[f32; 4]] = match bytemuck::try_cast_slice_mut(target) {
-        Err(_) => return Err(TransposeError::MismatchDimensions),
-        Ok(casted_source) => casted_source,
-    };
-    flop_arbitrary(casted_source, casted_target, width, height)
+    flop_arbitrary_grouped::<f32, 4>(input, input_stride, output, output_stride, width, height)
 }

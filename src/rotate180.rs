@@ -29,8 +29,8 @@
 use crate::TransposeError;
 use bytemuck::{AnyBitPattern, NoUninit, Pod};
 
-trait Flipper<V: Copy> {
-    fn flip(
+trait Rotator<V: Copy> {
+    fn rotate(
         &self,
         input: &[V],
         input_stride: usize,
@@ -40,10 +40,11 @@ trait Flipper<V: Copy> {
     );
 }
 
-macro_rules! reverse_copy_flatten {
+macro_rules! rotate_flatten {
     ($input:expr, $input_stride:expr,$output:expr, $output_stride:expr, $width:expr) => {
         for (dst, src) in $output
             .chunks_exact_mut($output_stride)
+            .rev()
             .zip($input.chunks_exact($input_stride))
         {
             let dst = &mut dst[0..$width];
@@ -55,10 +56,11 @@ macro_rules! reverse_copy_flatten {
     };
 }
 
-macro_rules! reverse_copy {
+macro_rules! rotate_grouped_copy {
     ($input:expr, $input_stride:expr,$output:expr, $output_stride:expr, $width:expr, $cn: expr) => {
         for (dst, src) in $output
             .chunks_exact_mut($output_stride)
+            .rev()
             .zip($input.chunks_exact($input_stride))
         {
             let dst = &mut dst[0..$width * $cn];
@@ -77,13 +79,13 @@ struct CommonGroupedFlipper<V: Copy + Pod + NoUninit + AnyBitPattern, const N: u
     _phantom: std::marker::PhantomData<V>,
 }
 
-impl<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Flipper<V>
+impl<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Rotator<V>
     for CommonGroupedFlipper<V, N>
 where
     [V; N]: Pod,
 {
     #[inline(always)]
-    fn flip(
+    fn rotate(
         &self,
         input: &[V],
         input_stride: usize,
@@ -91,17 +93,17 @@ where
         output_stride: usize,
         width: usize,
     ) {
-        reverse_copy!(input, input_stride, output, output_stride, width, N);
+        rotate_grouped_copy!(input, input_stride, output, output_stride, width, N);
     }
 }
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct SSSE3GroupedFlipper<V: Copy, const N: usize> {
+struct SSSE3GroupedRotator<V: Copy, const N: usize> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-macro_rules! define_flipper_grouped_x86 {
+macro_rules! define_rotator_grouped_x86 {
     ($flipper_type:ident, $feature: literal) => {
         #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
         impl<V: Copy + Pod, const N: usize> $flipper_type<V, N>
@@ -109,7 +111,7 @@ macro_rules! define_flipper_grouped_x86 {
             [V; N]: Pod,
         {
             #[target_feature(enable = $feature)]
-            unsafe fn flip_impl(
+            unsafe fn rotate_impl(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -117,16 +119,16 @@ macro_rules! define_flipper_grouped_x86 {
                 output_stride: usize,
                 width: usize,
             ) {
-                reverse_copy!(input, input_stride, output, output_stride, width, N);
+                rotate_grouped_copy!(input, input_stride, output, output_stride, width, N);
             }
         }
 
         #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-        impl<V: Copy + Pod, const N: usize> Flipper<V> for $flipper_type<V, N>
+        impl<V: Copy + Pod, const N: usize> Rotator<V> for $flipper_type<V, N>
         where
             [V; N]: Pod,
         {
-            fn flip(
+            fn rotate(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -134,13 +136,13 @@ macro_rules! define_flipper_grouped_x86 {
                 output_stride: usize,
                 width: usize,
             ) {
-                unsafe { self.flip_impl(input, input_stride, output, output_stride, width) }
+                unsafe { self.rotate_impl(input, input_stride, output, output_stride, width) }
             }
         }
     };
 }
 
-macro_rules! define_flipper_grouped_aarch64 {
+macro_rules! define_rotator_grouped_aarch64 {
     ($flipper_type: ident, $feature: literal) => {
         #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
         impl<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> $flipper_type<V, N>
@@ -148,7 +150,7 @@ macro_rules! define_flipper_grouped_aarch64 {
             [V; N]: Pod,
         {
             #[target_feature(enable = $feature)]
-            unsafe fn flip_impl(
+            unsafe fn rotate_impl(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -156,17 +158,17 @@ macro_rules! define_flipper_grouped_aarch64 {
                 output_stride: usize,
                 width: usize,
             ) {
-                reverse_copy!(input, input_stride, output, output_stride, width, N);
+                rotate_grouped_copy!(input, input_stride, output, output_stride, width, N);
             }
         }
 
         #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-        impl<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Flipper<V>
+        impl<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Rotator<V>
             for $flipper_type<V, N>
         where
             [V; N]: Pod,
         {
-            fn flip(
+            fn rotate(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -174,67 +176,67 @@ macro_rules! define_flipper_grouped_aarch64 {
                 output_stride: usize,
                 width: usize,
             ) {
-                unsafe { self.flip_impl(input, input_stride, output, output_stride, width) }
+                unsafe { self.rotate_impl(input, input_stride, output, output_stride, width) }
             }
         }
     };
 }
 
-define_flipper_grouped_x86!(SSSE3GroupedFlipper, "ssse3");
+define_rotator_grouped_x86!(SSSE3GroupedRotator, "ssse3");
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct Sse41GroupedFlipper<V: Copy, const N: usize> {
+struct Sse41GroupedRotator<V: Copy, const N: usize> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_grouped_x86!(Sse41GroupedFlipper, "sse4.1");
+define_rotator_grouped_x86!(Sse41GroupedRotator, "sse4.1");
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct Avx2GroupedFlipper<V: Copy, const N: usize> {
+struct Avx2GroupedRotator<V: Copy, const N: usize> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_grouped_x86!(Avx2GroupedFlipper, "avx2");
+define_rotator_grouped_x86!(Avx2GroupedRotator, "avx2");
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct SveGroupedFlipper<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
+struct SveGroupedRotator<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_grouped_aarch64!(SveGroupedFlipper, "sve2");
+define_rotator_grouped_aarch64!(SveGroupedRotator, "sve2");
 
 #[derive(Debug, Copy, Clone, Default)]
-struct FlipperGroupedFactory<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
+struct RotatorGroupedFactory<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
     _phantom: std::marker::PhantomData<V>,
 }
 
 impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize>
-    FlipperGroupedFactory<V, N>
+    RotatorGroupedFactory<V, N>
 where
     V: Default,
     [V; N]: Pod,
 {
     #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-    fn make_flipper(&self) -> Box<dyn Flipper<V>> {
+    fn make_rotator(&self) -> Box<dyn Rotator<V>> {
         if std::arch::is_x86_feature_detected!("avx2") {
-            return Box::new(Avx2GroupedFlipper::<V, N>::default());
+            return Box::new(Avx2GroupedRotator::<V, N>::default());
         }
         if std::arch::is_x86_feature_detected!("sse4.1") {
-            return Box::new(Sse41GroupedFlipper::<V, N>::default());
+            return Box::new(Sse41GroupedRotator::<V, N>::default());
         }
         if std::arch::is_x86_feature_detected!("ssse3") {
-            return Box::new(SSSE3GroupedFlipper::<V, N>::default());
+            return Box::new(SSSE3GroupedRotator::<V, N>::default());
         }
         Box::new(CommonGroupedFlipper::<V, N>::default())
     }
 
     #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-    fn make_flipper(&self) -> Box<dyn Flipper<V>> {
+    fn make_rotator(&self) -> Box<dyn Rotator<V>> {
         if std::arch::is_aarch64_feature_detected!("sve2") {
-            return Box::new(SveGroupedFlipper::<V, N>::default());
+            return Box::new(SveGroupedRotator::<V, N>::default());
         }
         Box::new(CommonGroupedFlipper::<V, N>::default())
     }
@@ -243,17 +245,17 @@ where
         all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
         all(target_arch = "aarch64", feature = "unsafe")
     )))]
-    fn make_flipper(&self) -> Box<dyn Flipper<V>> {
+    fn make_rotator(&self) -> Box<dyn Rotator<V>> {
         Box::new(CommonGroupedFlipper::<V, N>::default())
     }
 }
 
-macro_rules! define_flipper_aarch64 {
+macro_rules! define_rotator_aarch64 {
     ($flipper_type: ident, $feature: literal) => {
         #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
         impl<V: Copy + Default> $flipper_type<V> {
             #[target_feature(enable = $feature)]
-            unsafe fn flip_impl(
+            unsafe fn rotate_impl(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -261,13 +263,13 @@ macro_rules! define_flipper_aarch64 {
                 output_stride: usize,
                 width: usize,
             ) {
-                reverse_copy_flatten!(input, input_stride, output, output_stride, width);
+                rotate_flatten!(input, input_stride, output, output_stride, width);
             }
         }
 
         #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-        impl<V: Copy + Default> Flipper<V> for $flipper_type<V> {
-            fn flip(
+        impl<V: Copy + Default> Rotator<V> for $flipper_type<V> {
+            fn rotate(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -275,18 +277,18 @@ macro_rules! define_flipper_aarch64 {
                 output_stride: usize,
                 width: usize,
             ) {
-                unsafe { self.flip_impl(input, input_stride, output, output_stride, width) }
+                unsafe { self.rotate_impl(input, input_stride, output, output_stride, width) }
             }
         }
     };
 }
 
-macro_rules! define_flipper_x86 {
+macro_rules! define_rotator_x86 {
     ($flipper_type: ident, $feature: literal) => {
         #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
         impl<V: Copy + Default> $flipper_type<V> {
             #[target_feature(enable = $feature)]
-            unsafe fn flip_impl(
+            unsafe fn rotate_impl(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -294,13 +296,13 @@ macro_rules! define_flipper_x86 {
                 output_stride: usize,
                 width: usize,
             ) {
-                reverse_copy_flatten!(input, input_stride, output, output_stride, width);
+                rotate_flatten!(input, input_stride, output, output_stride, width);
             }
         }
 
         #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-        impl<V: Copy + Default> Flipper<V> for $flipper_type<V> {
-            fn flip(
+        impl<V: Copy + Default> Rotator<V> for $flipper_type<V> {
+            fn rotate(
                 &self,
                 input: &[V],
                 input_stride: usize,
@@ -308,20 +310,20 @@ macro_rules! define_flipper_x86 {
                 output_stride: usize,
                 width: usize,
             ) {
-                unsafe { self.flip_impl(input, input_stride, output, output_stride, width) }
+                unsafe { self.rotate_impl(input, input_stride, output, output_stride, width) }
             }
         }
     };
 }
 
 #[derive(Debug, Copy, Clone, Default)]
-struct CommonFlipper<V: Copy + Default> {
+struct CommonRotator<V: Copy + Default> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-impl<V: Copy + Default> Flipper<V> for CommonFlipper<V> {
+impl<V: Copy + Default> Rotator<V> for CommonRotator<V> {
     #[inline(always)]
-    fn flip(
+    fn rotate(
         &self,
         input: &[V],
         input_stride: usize,
@@ -329,80 +331,80 @@ impl<V: Copy + Default> Flipper<V> for CommonFlipper<V> {
         output_stride: usize,
         width: usize,
     ) {
-        reverse_copy_flatten!(input, input_stride, output, output_stride, width);
+        rotate_flatten!(input, input_stride, output, output_stride, width);
     }
 }
 
 #[derive(Debug, Copy, Clone, Default)]
-struct FlipperFactory<V: Copy + Default + 'static> {
+struct RotatorFactory<V: Copy + Default + 'static> {
     _phantom: std::marker::PhantomData<V>,
 }
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct SveFlipper<V: Copy + Default + 'static> {
+struct SveRotator<V: Copy + Default + 'static> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_aarch64!(SveFlipper, "sve2");
+define_rotator_aarch64!(SveRotator, "sve2");
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct Avx2Flipper<V: Copy> {
+struct Avx2Rotator<V: Copy> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_x86!(Avx2Flipper, "avx2");
+define_rotator_x86!(Avx2Rotator, "avx2");
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct Sse41Flipper<V: Copy> {
+struct Sse41Rotator<V: Copy> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_x86!(Sse41Flipper, "sse4.1");
+define_rotator_x86!(Sse41Rotator, "sse4.1");
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[derive(Debug, Copy, Clone, Default)]
-struct SSSE3Flipper<V: Copy> {
+struct SSSE3Rotator<V: Copy> {
     _phantom: std::marker::PhantomData<V>,
 }
 
-define_flipper_x86!(SSSE3Flipper, "ssse3");
+define_rotator_x86!(SSSE3Rotator, "ssse3");
 
-impl<V: Copy + Default + 'static> FlipperFactory<V> {
+impl<V: Copy + Default + 'static> RotatorFactory<V> {
     #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-    fn make_flipper(&self) -> Box<dyn Flipper<V>> {
+    fn make_rotator(&self) -> Box<dyn Rotator<V>> {
         if std::arch::is_x86_feature_detected!("avx2") {
-            return Box::new(Avx2Flipper::<V>::default());
+            return Box::new(Avx2Rotator::<V>::default());
         }
         if std::arch::is_x86_feature_detected!("sse4.1") {
-            return Box::new(Sse41Flipper::<V>::default());
+            return Box::new(Sse41Rotator::<V>::default());
         }
         if std::arch::is_x86_feature_detected!("ssse3") {
-            return Box::new(SSSE3Flipper::<V>::default());
+            return Box::new(SSSE3Rotator::<V>::default());
         }
-        Box::new(CommonFlipper::<V>::default())
+        Box::new(CommonRotator::<V>::default())
     }
 
     #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-    fn make_flipper(&self) -> Box<dyn Flipper<V>> {
+    fn make_rotator(&self) -> Box<dyn Rotator<V>> {
         if std::arch::is_aarch64_feature_detected!("sve2") {
-            return Box::new(SveFlipper::<V>::default());
+            return Box::new(SveRotator::<V>::default());
         }
-        Box::new(CommonFlipper::<V>::default())
+        Box::new(CommonRotator::<V>::default())
     }
 
     #[cfg(not(any(
         all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
         all(target_arch = "aarch64", feature = "unsafe")
     )))]
-    fn make_flipper(&self) -> Box<dyn Flipper<V>> {
-        Box::new(CommonFlipper::<V>::default())
+    fn make_rotator(&self) -> Box<dyn Rotator<V>> {
+        Box::new(CommonRotator::<V>::default())
     }
 }
 
-/// Performs arbitrary flipping
+/// Performs arbitrary rotating by 180
 ///
 /// # Arguments
 ///
@@ -415,7 +417,7 @@ impl<V: Copy + Default + 'static> FlipperFactory<V> {
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_arbitrary<V: Copy + Default + 'static>(
+pub fn rotate180_arbitrary<V: Copy + Default + 'static>(
     input: &[V],
     input_stride: usize,
     output: &mut [V],
@@ -439,14 +441,14 @@ pub fn flip_arbitrary<V: Copy + Default + 'static>(
         return Err(TransposeError::MismatchDimensions);
     }
 
-    let flipper_factory = FlipperFactory::<V>::default();
-    let flipper = flipper_factory.make_flipper();
-    flipper.flip(input, input_stride, output, output_stride, width);
+    let flipper_factory = RotatorFactory::<V>::default();
+    let flipper = flipper_factory.make_rotator();
+    flipper.rotate(input, input_stride, output, output_stride, width);
 
     Ok(())
 }
 
-/// Performs arbitrary flipping
+/// Performs arbitrary rotating by 180
 ///
 /// # Arguments
 ///
@@ -459,7 +461,7 @@ pub fn flip_arbitrary<V: Copy + Default + 'static>(
 ///
 /// returns: Result<(), TransposeError>
 ///
-fn flip_arbitrary_image<V: Copy + Default + 'static + Pod, const N: usize>(
+fn rotate180_arbitrary_image<V: Copy + Default + 'static + Pod, const N: usize>(
     input: &[V],
     input_stride: usize,
     output: &mut [V],
@@ -486,14 +488,14 @@ where
         return Err(TransposeError::MismatchDimensions);
     }
 
-    let flipper_factory = FlipperGroupedFactory::<V, N>::default();
-    let flipper = flipper_factory.make_flipper();
-    flipper.flip(input, input_stride, output, output_stride, width);
+    let flipper_factory = RotatorGroupedFactory::<V, N>::default();
+    let flipper = flipper_factory.make_rotator();
+    flipper.rotate(input, input_stride, output, output_stride, width);
 
     Ok(())
 }
 
-/// Performs plane image flipping
+/// Performs plane image rotating by 180
 ///
 /// # Arguments
 ///
@@ -506,7 +508,7 @@ where
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_plane(
+pub fn rotate180_plane(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],
@@ -514,10 +516,10 @@ pub fn flip_plane(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs plane with alpha flipping
+/// Performs plane with alpha rotating by 180
 ///
 /// # Arguments
 ///
@@ -530,7 +532,7 @@ pub fn flip_plane(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_plane_with_alpha(
+pub fn rotate180_plane_with_alpha(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],
@@ -538,10 +540,10 @@ pub fn flip_plane_with_alpha(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<u8, 2>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<u8, 2>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs RGB image flipping
+/// Performs RGB image rotating by 180
 ///
 /// # Arguments
 ///
@@ -554,7 +556,7 @@ pub fn flip_plane_with_alpha(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_rgb(
+pub fn rotate180_rgb(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],
@@ -562,10 +564,10 @@ pub fn flip_rgb(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<u8, 3>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<u8, 3>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs RGBA image flipping
+/// Performs RGBA image rotating by 180
 ///
 /// # Arguments
 ///
@@ -578,7 +580,7 @@ pub fn flip_rgb(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_rgba(
+pub fn rotate180_rgba(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],
@@ -586,10 +588,10 @@ pub fn flip_rgba(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<u8, 4>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<u8, 4>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs plane image flipping
+/// Performs plane image rotating by 180
 ///
 /// # Arguments
 ///
@@ -602,7 +604,7 @@ pub fn flip_rgba(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_plane16(
+pub fn rotate180_plane16(
     input: &[u16],
     input_stride: usize,
     output: &mut [u16],
@@ -610,10 +612,10 @@ pub fn flip_plane16(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs plane with alpha image flipping
+/// Performs plane with alpha image rotating by 180
 ///
 /// # Arguments
 ///
@@ -626,7 +628,7 @@ pub fn flip_plane16(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_plane16_with_alpha(
+pub fn rotate180_plane16_with_alpha(
     input: &[u16],
     input_stride: usize,
     output: &mut [u16],
@@ -634,10 +636,10 @@ pub fn flip_plane16_with_alpha(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<u16, 2>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<u16, 2>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs RGB image flipping
+/// Performs RGB image rotating by 180
 ///
 /// # Arguments
 ///
@@ -650,7 +652,7 @@ pub fn flip_plane16_with_alpha(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_rgb16(
+pub fn rotate180_rgb16(
     input: &[u16],
     input_stride: usize,
     output: &mut [u16],
@@ -658,10 +660,10 @@ pub fn flip_rgb16(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<u16, 3>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<u16, 3>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs RGBA image flipping
+/// Performs RGBA image rotating by 180
 ///
 /// # Arguments
 ///
@@ -674,7 +676,7 @@ pub fn flip_rgb16(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_rgba16(
+pub fn rotate180_rgba16(
     input: &[u16],
     input_stride: usize,
     output: &mut [u16],
@@ -682,10 +684,10 @@ pub fn flip_rgba16(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<u16, 4>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<u16, 4>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs plane image flipping
+/// Performs plane image rotating by 180
 ///
 /// # Arguments
 ///
@@ -698,7 +700,7 @@ pub fn flip_rgba16(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_plane_f32(
+pub fn rotate180_plane_f32(
     input: &[f32],
     input_stride: usize,
     output: &mut [f32],
@@ -706,10 +708,10 @@ pub fn flip_plane_f32(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs plane with alpha image flipping
+/// Performs plane with alpha image rotating by 180
 ///
 /// # Arguments
 ///
@@ -722,7 +724,7 @@ pub fn flip_plane_f32(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_plane_f32_with_alpha(
+pub fn rotate180_plane_f32_with_alpha(
     input: &[f32],
     input_stride: usize,
     output: &mut [f32],
@@ -730,10 +732,10 @@ pub fn flip_plane_f32_with_alpha(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<f32, 2>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<f32, 2>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs RGB image flipping
+/// Performs RGB image rotating by 180
 ///
 /// # Arguments
 ///
@@ -746,7 +748,7 @@ pub fn flip_plane_f32_with_alpha(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_rgb_f32(
+pub fn rotate180_rgb_f32(
     input: &[f32],
     input_stride: usize,
     output: &mut [f32],
@@ -754,10 +756,10 @@ pub fn flip_rgb_f32(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<f32, 3>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<f32, 3>(input, input_stride, output, output_stride, width, height)
 }
 
-/// Performs RGBA image flipping
+/// Performs RGBA image rotating by 180
 ///
 /// # Arguments
 ///
@@ -770,7 +772,7 @@ pub fn flip_rgb_f32(
 ///
 /// returns: Result<(), TransposeError>
 ///
-pub fn flip_rgba_f32(
+pub fn rotate180_rgba_f32(
     input: &[f32],
     input_stride: usize,
     output: &mut [f32],
@@ -778,5 +780,5 @@ pub fn flip_rgba_f32(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    flip_arbitrary_image::<f32, 4>(input, input_stride, output, output_stride, width, height)
+    rotate180_arbitrary_image::<f32, 4>(input, input_stride, output, output_stride, width, height)
 }

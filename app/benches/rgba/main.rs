@@ -28,8 +28,12 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_transpose::{transpose_rgba, transpose_rgba16, transpose_rgba_f32, FlipMode, FlopMode};
+use fast_transpose::{
+    flip_rgba, rotate180_rgba, transpose_rgba, transpose_rgba16, transpose_rgba_f32, FlipMode,
+    FlopMode,
+};
 use image::{DynamicImage, ImageReader};
+use yuv_sys::{RotationMode_kRotate180, RotationMode_kRotate270, RotationMode_kRotate90};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let img = ImageReader::open("../assets/sonderland.jpg")
@@ -39,18 +43,127 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let img = img.to_rgba8();
     let dimensions = img.dimensions();
     let components = 4;
-    c.bench_function("Fast transpose: Rgba u8", |b| {
+
+    c.bench_function("FT Rotate 90: Rgba u8", |b| {
         let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
         b.iter(|| {
             transpose_rgba(
                 &img,
+                dimensions.0 as usize * 4,
                 &mut transposed,
+                dimensions.1 as usize * 4,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
                 FlopMode::NoFlop,
             )
             .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 90: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_ARGBRotate(
+                img.as_ptr(),
+                dimensions.0 as i32 * 4,
+                transposed.as_mut_ptr(),
+                dimensions.1 as i32 * 4,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+                RotationMode_kRotate90,
+            );
+        });
+    });
+
+    c.bench_function("FT Rotate 180: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            rotate180_rgba(
+                &img,
+                dimensions.0 as usize * 4,
+                &mut transposed,
+                dimensions.0 as usize * 4,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 180: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_ARGBRotate(
+                img.as_ptr(),
+                dimensions.0 as i32 * 4,
+                transposed.as_mut_ptr(),
+                dimensions.0 as i32 * 4,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+                RotationMode_kRotate180,
+            );
+        });
+    });
+
+    c.bench_function("FT Rotate 270: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            transpose_rgba(
+                &img,
+                dimensions.0 as usize * 4,
+                &mut transposed,
+                dimensions.1 as usize * 4,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+                FlipMode::Flip,
+                FlopMode::Flop,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 270: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_ARGBRotate(
+                img.as_ptr(),
+                dimensions.0 as i32 * 4,
+                transposed.as_mut_ptr(),
+                dimensions.1 as i32 * 4,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+                RotationMode_kRotate270,
+            );
+        });
+    });
+
+    c.bench_function("FT Mirror: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            flip_rgba(
+                &img,
+                dimensions.0 as usize * 4,
+                &mut transposed,
+                dimensions.0 as usize * 4,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Mirror: Rgba u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_ARGBMirror(
+                img.as_ptr(),
+                dimensions.0 as i32 * 4,
+                transposed.as_mut_ptr(),
+                dimensions.0 as i32 * 4,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+            );
         });
     });
 
@@ -69,7 +182,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_rgba16(
                 &img16,
+                dimensions.0 as usize * 4,
                 &mut transposed,
+                dimensions.1 as usize * 4,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
@@ -94,7 +209,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             transpose_rgba_f32(
                 &image_f32,
+                dimensions.0 as usize * 4,
                 &mut transposed,
+                dimensions.1 as usize * 4,
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,

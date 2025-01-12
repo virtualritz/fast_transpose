@@ -8,6 +8,7 @@ image = { version = "0.25.5" }
 fast_transpose = { path = "..", default-features = true }
 transpose = "0.2.3"
 bytemuck = "1.19.0"
+yuv-sys = "0.3.7"
 
 [dev-dependencies]
 criterion = "0.5.1"
