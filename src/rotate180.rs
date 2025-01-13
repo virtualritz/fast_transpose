@@ -472,9 +472,6 @@ fn rotate180_arbitrary_image<V: Copy + Default + 'static + Pod, const N: usize>(
 where
     [V; N]: Pod,
 {
-    if input.len() != output.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
     if input.len() != input_stride * height {
         return Err(TransposeError::MismatchDimensions);
     }

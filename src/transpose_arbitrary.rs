@@ -273,9 +273,6 @@ pub fn transpose_arbitrary<V: Copy>(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    if input.len() != output.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
     if input.len() != input_stride * height {
         return Err(TransposeError::MismatchDimensions);
     }
