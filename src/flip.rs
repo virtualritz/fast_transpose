@@ -423,9 +423,6 @@ pub fn flip_arbitrary<V: Copy + Default + 'static>(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    if input.len() != output.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
     if input.len() != input_stride * height {
         return Err(TransposeError::MismatchDimensions);
     }
@@ -470,9 +467,6 @@ fn flip_arbitrary_image<V: Copy + Default + 'static + Pod, const N: usize>(
 where
     [V; N]: Pod,
 {
-    if input.len() != output.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
     if input.len() != input_stride * height {
         return Err(TransposeError::MismatchDimensions);
     }

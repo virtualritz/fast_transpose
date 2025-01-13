@@ -210,9 +210,6 @@ pub fn flop_arbitrary<V: Copy + Default>(
     width: usize,
     height: usize,
 ) -> Result<(), TransposeError> {
-    if input.len() != output.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
     if input.len() != input_stride * height {
         return Err(TransposeError::MismatchDimensions);
     }
@@ -256,9 +253,6 @@ fn flop_arbitrary_grouped<V: Copy + Default + Pod, const N: usize>(
 where
     [V; N]: Pod,
 {
-    if input.len() != output.len() {
-        return Err(TransposeError::MismatchDimensions);
-    }
     if input.len() != input_stride * height {
         return Err(TransposeError::MismatchDimensions);
     }
