@@ -21,6 +21,7 @@ bytemuck = "1.19.0"
 [features]
 default = ["unsafe"]
 unsafe = []
+nightly_avx512 = ["unsafe"]
 
 [profile.dev.package]
 miniz_oxide.opt-level = 3

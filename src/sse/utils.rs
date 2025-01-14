@@ -26,10 +26,7 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod x4_u32;
-mod x8_u32;
-mod utils;
 
-pub(crate) use x4_u32::sse_transpose_4x4_u32x1;
-pub(crate) use x8_u32::sse_transpose_8x8_u32x1;
-pub(crate) use utils::_mm_shuffle;
+pub(crate) const fn _mm_shuffle(z: u32, y: u32, x: u32, w: u32) -> i32 {
+    ((z << 6) | (y << 4) | (x << 2) | w) as i32
+}

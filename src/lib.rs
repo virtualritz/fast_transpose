@@ -28,6 +28,9 @@
  */
 #![allow(clippy::too_many_arguments)]
 #![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
+#![cfg_attr(feature = "nightly_avx512", feature(cfg_version))]
+#![cfg_attr(feature = "nightly_avx512", feature(avx512_target_feature))]
+#![cfg_attr(feature = "nightly_avx512", feature(stdarch_x86_avx512))]
 #![deny(unreachable_pub)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 mod avx;
@@ -45,6 +48,8 @@ mod transpose_arbitrary_group;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "nightly_avx512"))]
+mod avx512;
 
 pub use flip::{
     flip_arbitrary, flip_plane, flip_plane16, flip_plane16_with_alpha, flip_plane_f32,
