@@ -36,7 +36,7 @@ use image::{DynamicImage, ImageReader};
 use yuv_sys::{RotationMode_kRotate180, RotationMode_kRotate270, RotationMode_kRotate90};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let img = ImageReader::open("../assets/sonderland.jpg")
+    let img = ImageReader::open("../assets/bench.jpg")
         .unwrap()
         .decode()
         .unwrap();

@@ -35,7 +35,7 @@ use fast_transpose::{
 use image::{DynamicImage, ImageReader};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let img = ImageReader::open("../assets/sonderland.jpg")
+    let img = ImageReader::open("../assets/bench.jpg")
         .unwrap()
         .decode()
         .unwrap();

@@ -32,7 +32,7 @@ use fast_transpose::{transpose_rgb, transpose_rgb16, transpose_rgb_f32, FlipMode
 use image::{DynamicImage, ImageReader};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let img = ImageReader::open("../assets/sonderland.jpg")
+    let img = ImageReader::open("../assets/bench.jpg")
         .unwrap()
         .decode()
         .unwrap();
