@@ -70,7 +70,7 @@ unsafe fn avx_transpose_8x8_impl<const FLIP: bool>(
     const FLAG_7: i32 = _mm_shuffle(1, 0, 1, 0);
     let tt6 = _mm256_shuffle_ps::<FLAG_7>(t5, t7);
     const FLAG_8: i32 = _mm_shuffle(3, 2, 3, 2);
-    let tt7 = _mm256_shuffle_ps::<FLAG_8>(_mm256_castsi256_ps(t5), _mm256_castsi256_ps(t7));
+    let tt7 = _mm256_shuffle_ps::<FLAG_8>(t5, t7);
     let r0 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt0, tt4));
     let r1 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt1, tt5));
     let r2 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt2, tt6));
