@@ -28,7 +28,7 @@
  */
 use fast_transpose::{
     flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
-    transpose_plane_f32, transpose_rgb, transpose_rgba, transpose_rgba8_chunked, FlipMode,
+    transpose_plane_f32, transpose_rgb, transpose_rgba, FlipMode,
     FlopMode,
 };
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
@@ -92,15 +92,15 @@ fn main() {
     // )
     // .unwrap();
 
-    transpose_rgba8_chunked(
+    transpose_rgba(
         &rgb_bytes,
         dimensions.0 as usize * 4,
         &mut transposed,
         dimensions.1 as usize * 4,
         dimensions.0 as usize,
         dimensions.1 as usize,
-        FlipMode::NoFlip,
-        FlopMode::NoFlop,
+        FlipMode::Flip,
+        FlopMode::Flop,
     )
     .unwrap();
 

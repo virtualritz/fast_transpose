@@ -27,6 +27,7 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
+use crate::rgba8::transpose_rgba8_chunked;
 use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
 use crate::utils::FlopMode;
 use crate::{transpose_arbitrary, FlipMode, TransposeError};
@@ -167,7 +168,7 @@ pub fn transpose_rgba(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    transpose_arbitrary_grouped::<u8, 4>(
+    transpose_rgba8_chunked(
         input,
         input_stride,
         output,

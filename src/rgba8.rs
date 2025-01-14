@@ -454,7 +454,7 @@ unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-pub fn transpose_rgba8_chunked(
+pub(crate) fn transpose_rgba8_chunked(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],

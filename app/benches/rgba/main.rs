@@ -29,8 +29,8 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use fast_transpose::{
-    flip_rgba, rotate180_rgba, transpose_rgba, transpose_rgba16, transpose_rgba8_chunked,
-    transpose_rgba_f32, FlipMode, FlopMode,
+    flip_rgba, rotate180_rgba, transpose_rgba, transpose_rgba16, transpose_rgba_f32, FlipMode,
+    FlopMode,
 };
 use image::{DynamicImage, ImageReader};
 use yuv_sys::{RotationMode_kRotate180, RotationMode_kRotate270, RotationMode_kRotate90};
@@ -55,23 +55,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 dimensions.0 as usize,
                 dimensions.1 as usize,
                 FlipMode::NoFlip,
-                FlopMode::NoFlop,
-            )
-            .unwrap();
-        });
-    });
-
-    c.bench_function("FT Rotate 90: Rgba N u8", |b| {
-        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| {
-            transpose_rgba8_chunked(
-                &img,
-                dimensions.0 as usize * 4,
-                &mut transposed,
-                dimensions.1 as usize * 4,
-                dimensions.0 as usize,
-                dimensions.1 as usize,
-                FlipMode::Flip,
                 FlopMode::NoFlop,
             )
             .unwrap();
