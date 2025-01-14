@@ -554,18 +554,18 @@ pub fn transpose_rgba8_chunked(
                 };
             }
 
-            // if std::arch::is_x86_feature_detected!("avx512bw") {
-            //     executor = match flip_mode {
-            //         FlipMode::NoFlip => match flop_mode {
-            //             FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
-            //             FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
-            //         },
-            //         FlipMode::Flip => match flop_mode {
-            //             FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
-            //             FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
-            //         },
-            //     };
-            // }
+            if std::arch::is_x86_feature_detected!("avx512bw") {
+                executor = match flip_mode {
+                    FlipMode::NoFlip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
+                    },
+                    FlipMode::Flip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
+                    },
+                };
+            }
 
             unsafe { executor(input, input_stride, output, output_stride, width, height) }
         }
