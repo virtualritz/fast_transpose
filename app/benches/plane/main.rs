@@ -28,10 +28,7 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_transpose::{
-    flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane_f32, FlipMode,
-    FlopMode,
-};
+use fast_transpose::{flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane8_chunked, transpose_plane_f32, FlipMode, FlopMode};
 use image::{DynamicImage, ImageReader};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -57,6 +54,23 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 FlopMode::NoFlop,
             )
             .unwrap();
+        });
+    });
+
+    c.bench_function("FT Rotate 90: Plane N u8", |b| {
+        let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            transpose_plane8_chunked(
+                &img,
+                dimensions.0 as usize,
+                &mut transposed,
+                dimensions.1 as usize,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+                FlipMode::NoFlip,
+                FlopMode::NoFlop,
+            )
+                .unwrap();
         });
     });
 

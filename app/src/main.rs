@@ -26,11 +26,7 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use fast_transpose::{
-    flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
-    transpose_plane_f32, transpose_rgb, transpose_rgba, FlipMode,
-    FlopMode,
-};
+use fast_transpose::{flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary, transpose_plane8_chunked, transpose_plane_f32, transpose_rgb, transpose_rgba, FlipMode, FlopMode};
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
 
@@ -48,7 +44,7 @@ fn main() {
     }
     println!("{:?}", arr);
 
-    let img = DynamicImage::ImageRgba8(img.to_rgba8());
+    let img = DynamicImage::ImageRgb8(img.to_rgb8());
 
     let dimensions = img.dimensions();
     let components = if img.color() == ColorType::Rgb8 { 3 } else { 4 };
@@ -92,17 +88,75 @@ fn main() {
     // )
     // .unwrap();
 
-    transpose_rgba(
-        &rgb_bytes,
-        dimensions.0 as usize * 4,
-        &mut transposed,
-        dimensions.1 as usize * 4,
+    let mut c1 = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c2 = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c3 = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+
+    let mut c1_d = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c2_d = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c3_d = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
+
+    for (((o1, o2), o3), src) in c1.iter_mut().zip(c2.iter_mut()).zip(c3.iter_mut())
+        .zip(img.to_rgb8().chunks_exact(3)){
+        *o1 = src[0];
+        *o2 = src[1];
+        *o3 = src[2];
+    }
+
+    transpose_plane8_chunked(
+        &c1,
+        dimensions.0 as usize,
+        &mut c1_d,
+        dimensions.1 as usize,
         dimensions.0 as usize,
         dimensions.1 as usize,
-        FlipMode::Flip,
+        FlipMode::NoFlip,
         FlopMode::NoFlop,
     )
     .unwrap();
+
+    transpose_plane8_chunked(
+        &c2,
+        dimensions.0 as usize,
+        &mut c2_d,
+        dimensions.1 as usize,
+        dimensions.0 as usize,
+        dimensions.1 as usize,
+        FlipMode::NoFlip,
+        FlopMode::NoFlop,
+    )
+        .unwrap();
+
+    transpose_plane8_chunked(
+        &c3,
+        dimensions.0 as usize,
+        &mut c3_d,
+        dimensions.1 as usize,
+        dimensions.0 as usize,
+        dimensions.1 as usize,
+        FlipMode::NoFlip,
+        FlopMode::NoFlop,
+    )
+        .unwrap();
+
+    for (((o1, o2), o3), src) in c1_d.iter().zip(c2_d.iter()).zip(c3_d.iter())
+        .zip(transposed.chunks_exact_mut(3)){
+        src[0] = *o1;
+        src[1] = *o2;
+        src[2] = *o3;
+    }
+
+    // transpose_rgba(
+    //     &rgb_bytes,
+    //     dimensions.0 as usize * 4,
+    //     &mut transposed,
+    //     dimensions.1 as usize * 4,
+    //     dimensions.0 as usize,
+    //     dimensions.1 as usize,
+    //     FlipMode::Flip,
+    //     FlopMode::NoFlop,
+    // )
+    // .unwrap();
 
     println!("Exec time {:?}", start.elapsed());
 

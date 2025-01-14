@@ -29,6 +29,10 @@
 mod utils;
 mod x4_u32;
 mod x8_u32;
+mod u8_8x8;
+mod u8_16x16;
 
 pub(crate) use x4_u32::neon_transpose_4x4_u8x4;
 pub(crate) use x8_u32::neon_transpose_4x4_u8x4x8;
+pub(crate) use u8_8x8::neon_transpose_u8_8x8;
+pub(crate) use u8_16x16::neon_transpose_u8_16x16;

@@ -53,6 +53,7 @@ mod transpose_arbitrary_group;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
+mod plane8;
 
 pub use flip::{
     flip_arbitrary, flip_plane, flip_plane16, flip_plane16_with_alpha, flip_plane_f32,
@@ -78,3 +79,4 @@ pub use unsigned_16::{
 };
 pub use unsigned_8::{transpose_plane, transpose_plane_with_alpha, transpose_rgb, transpose_rgba};
 pub use utils::{FlipMode, FlopMode, TransposeError};
+pub use plane8::transpose_plane8_chunked;

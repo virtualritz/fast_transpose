@@ -32,7 +32,7 @@ use crate::{FlipMode, FlopMode, TransposeError};
     all(target_arch = "aarch64", feature = "unsafe"),
     all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
 ))]
-trait TransposeBlock {
+pub(crate) trait TransposeBlock {
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize);
 }
 
@@ -40,7 +40,7 @@ trait TransposeBlock {
     all(target_arch = "aarch64", feature = "unsafe"),
     all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
 ))]
-fn transpose_section<const CN: usize, const FLOP: bool, const FLIP: bool>(
+pub(crate) fn transpose_section<const CN: usize, const FLOP: bool, const FLIP: bool>(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],
@@ -106,7 +106,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockNeon8x
     all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
 ))]
 #[inline(always)]
-fn transpose_executor<
+pub(crate) fn transpose_executor<
     const BLOCK_SIZE: usize,
     const CN: usize,
     const FLOP: bool,
