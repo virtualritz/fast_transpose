@@ -26,12 +26,18 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use fast_transpose::{flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary, transpose_plane8_chunked, transpose_plane_f32, transpose_rgb, transpose_rgba, FlipMode, FlopMode};
+use fast_transpose::{
+    flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
+    transpose_plane, transpose_plane_f32, transpose_rgb, transpose_rgba, FlipMode, FlopMode,
+};
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
 
 fn main() {
-    let img = ImageReader::open("assets/bench.jpg").unwrap().decode().unwrap();
+    let img = ImageReader::open("assets/bench.jpg")
+        .unwrap()
+        .decode()
+        .unwrap();
 
     let j: [u8; 4] = [3, 2, 1, 0];
     let mut arr = vec![];
@@ -96,14 +102,18 @@ fn main() {
     let mut c2_d = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
     let mut c3_d = vec![0u8; dimensions.0 as usize * dimensions.1 as usize];
 
-    for (((o1, o2), o3), src) in c1.iter_mut().zip(c2.iter_mut()).zip(c3.iter_mut())
-        .zip(img.to_rgb8().chunks_exact(3)){
+    for (((o1, o2), o3), src) in c1
+        .iter_mut()
+        .zip(c2.iter_mut())
+        .zip(c3.iter_mut())
+        .zip(img.to_rgb8().chunks_exact(3))
+    {
         *o1 = src[0];
         *o2 = src[1];
         *o3 = src[2];
     }
 
-    transpose_plane8_chunked(
+    transpose_plane(
         &c1,
         dimensions.0 as usize,
         &mut c1_d,
@@ -115,7 +125,7 @@ fn main() {
     )
     .unwrap();
 
-    transpose_plane8_chunked(
+    transpose_plane(
         &c2,
         dimensions.0 as usize,
         &mut c2_d,
@@ -125,9 +135,9 @@ fn main() {
         FlipMode::NoFlip,
         FlopMode::NoFlop,
     )
-        .unwrap();
+    .unwrap();
 
-    transpose_plane8_chunked(
+    transpose_plane(
         &c3,
         dimensions.0 as usize,
         &mut c3_d,
@@ -137,10 +147,14 @@ fn main() {
         FlipMode::NoFlip,
         FlopMode::NoFlop,
     )
-        .unwrap();
+    .unwrap();
 
-    for (((o1, o2), o3), src) in c1_d.iter().zip(c2_d.iter()).zip(c3_d.iter())
-        .zip(transposed.chunks_exact_mut(3)){
+    for (((o1, o2), o3), src) in c1_d
+        .iter()
+        .zip(c2_d.iter())
+        .zip(c3_d.iter())
+        .zip(transposed.chunks_exact_mut(3))
+    {
         src[0] = *o1;
         src[1] = *o2;
         src[2] = *o3;

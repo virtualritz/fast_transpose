@@ -151,7 +151,7 @@ unsafe fn transpose_plane8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-pub fn transpose_plane8_chunked(
+pub(crate) fn transpose_plane8_chunked(
     input: &[u8],
     input_stride: usize,
     output: &mut [u8],

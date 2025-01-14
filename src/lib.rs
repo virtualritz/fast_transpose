@@ -79,4 +79,3 @@ pub use unsigned_16::{
 };
 pub use unsigned_8::{transpose_plane, transpose_plane_with_alpha, transpose_rgb, transpose_rgba};
 pub use utils::{FlipMode, FlopMode, TransposeError};
-pub use plane8::transpose_plane8_chunked;
