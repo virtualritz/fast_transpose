@@ -27,3 +27,5 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 mod x16_u32;
+
+pub(crate) use x16_u32::avx512_transpose_16x16_u32;

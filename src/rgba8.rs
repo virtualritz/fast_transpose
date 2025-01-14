@@ -235,6 +235,24 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockAvx2_8
     }
 }
 
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+struct TransposeBlockAvx512_16x16<const FLOP: bool, const FLIP: bool> {}
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockAvx512_16x16<FLOP, FLIP> {
+    #[inline(always)]
+    fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
+        use crate::avx512::avx512_transpose_16x16_u32;
+        avx512_transpose_16x16_u32::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+    }
+}
+
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
 fn transpose_rgba8_impl_neon<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
@@ -375,6 +393,67 @@ unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
     )
 }
 
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+#[target_feature(enable = "avx512f")]
+unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
+    input: &[u8],
+    input_stride: usize,
+    output: &mut [u8],
+    output_stride: usize,
+    width: usize,
+    height: usize,
+) {
+    const CN: usize = 4;
+
+    let mut y = 0usize;
+
+    y = transpose_executor::<16, 4, FLOP, FLIP>(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        y,
+        TransposeBlockAvx512_16x16::<FLOP, FLIP> {},
+    );
+
+    y = transpose_executor::<8, 4, FLOP, FLIP>(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        y,
+        TransposeBlockAvx2_8x8::<FLOP, FLIP> {},
+    );
+
+    y = transpose_executor::<4, 4, FLOP, FLIP>(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        y,
+        TransposeBlockSSSE34x4::<FLOP, FLIP> {},
+    );
+
+    transpose_section::<CN, FLOP, FLIP>(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        y,
+    )
+}
+
 pub fn transpose_rgba8_chunked(
     input: &[u8],
     input_stride: usize,
@@ -471,6 +550,19 @@ pub fn transpose_rgba8_chunked(
                     FlipMode::Flip => match flop_mode {
                         FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, true>,
                         FlopMode::Flop => transpose_rgba8_impl_avx2::<true, true>,
+                    },
+                };
+            }
+
+            if std::arch::is_x86_feature_detected!("avx512f") {
+                executor = match flip_mode {
+                    FlipMode::NoFlip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
+                    },
+                    FlipMode::Flip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
                     },
                 };
             }

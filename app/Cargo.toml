@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 image = { version = "0.25.5" }
-fast_transpose = { path = "..", default-features = true }
+fast_transpose = { path = "..", default-features = true, features = ["nightly_avx512"] }
 transpose = "0.2.3"
 bytemuck = "1.19.0"
 yuv-sys = "0.3.7"

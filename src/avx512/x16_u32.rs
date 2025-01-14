@@ -146,35 +146,212 @@ unsafe fn avx512_transpose_16x16_impl<const FLIP: bool>(
     let _tmpf = _mm512_shuffle_f32x4::<V_16>(_tmpr, _tmpv);
 
     const R_1: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r0 = _mm512_shuffle_f32x4::<R_1>(_tmp0, _tmp1, );
+    let _r0 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_1>(_tmp0, _tmp1));
     const R_2: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r1 = _mm512_shuffle_f32x4::<R_2>(_tmp2, _tmp3, );
+    let _r1 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_2>(_tmp2, _tmp3));
     const R_3: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r2 = _mm512_shuffle_f32x4::<R_3>(_tmp4, _tmp5, );
+    let _r2 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_3>(_tmp4, _tmp5));
     const R_4: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r3 = _mm512_shuffle_f32x4::<R_4>(_tmp6, _tmp7, );
+    let _r3 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_4>(_tmp6, _tmp7));
     const R_5: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r4 = _mm512_shuffle_f32x4::<R_5>(_tmp8, _tmp9, );
+    let _r4 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_5>(_tmp8, _tmp9));
     const R_6: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r5 = _mm512_shuffle_f32x4::<R_6>(_tmpa, _tmpb, );
-    const R_7: i32 =  _mm_shuffle(2, 0, 2, 0);
-    let _r6 = _mm512_shuffle_f32x4::<R_7>(_tmpc, _tmpd,);
+    let _r5 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_6>(_tmpa, _tmpb));
+    const R_7: i32 = _mm_shuffle(2, 0, 2, 0);
+    let _r6 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_7>(_tmpc, _tmpd));
     const R_8: i32 = _mm_shuffle(2, 0, 2, 0);
-    let _r7 = _mm512_shuffle_f32x4::<R_8>(_tmpe, _tmpf, );
+    let _r7 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_8>(_tmpe, _tmpf));
     const R_9: i32 = _mm_shuffle(3, 1, 3, 1);
-    let _r8 = _mm512_shuffle_f32x4::<R_9>(_tmp0, _tmp1, );
+    let _r8 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_9>(_tmp0, _tmp1));
     const R_10: i32 = _mm_shuffle(3, 1, 3, 1);
-    let _r9 = _mm512_shuffle_f32x4::<R_10>(_tmp2, _tmp3, );
+    let _r9 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_10>(_tmp2, _tmp3));
     const R_11: i32 = _mm_shuffle(3, 1, 3, 1);
-    let _r10 = _mm512_shuffle_f32x4::<R_11>(_tmp4, _tmp5, );
+    let _r10 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_11>(_tmp4, _tmp5));
     const R_12: i32 = _mm_shuffle(3, 1, 3, 1);
-    let _r11 = _mm512_shuffle_f32x4::<R_12>(_tmp6, _tmp7, );
-    const R_13: i32 =  _mm_shuffle(3, 1, 3, 1);
-    let _r12 = _mm512_shuffle_f32x4::<R_13>(_tmp8, _tmp9,);
+    let _r11 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_12>(_tmp6, _tmp7));
+    const R_13: i32 = _mm_shuffle(3, 1, 3, 1);
+    let _r12 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_13>(_tmp8, _tmp9));
     const R_14: i32 = _mm_shuffle(3, 1, 3, 1);
-    let _r13 = _mm512_shuffle_f32x4::<R_14>(_tmpa, _tmpb, );
-    const R_15: i32 =  _mm_shuffle(3, 1, 3, 1);
-    let _r14 = _mm512_shuffle_f32x4::<R_15>(_tmpc, _tmpd,);
+    let _r13 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_14>(_tmpa, _tmpb));
+    const R_15: i32 = _mm_shuffle(3, 1, 3, 1);
+    let _r14 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_15>(_tmpc, _tmpd));
     const R_16: i32 = _mm_shuffle(3, 1, 3, 1);
-    let _r15 = _mm512_shuffle_f32x4::<R_16>(_tmpe, _tmpf, );
+    let _r15 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_16>(_tmpe, _tmpf));
+
+    // TODO: FLip
+    (
+        (_r0, _r1, _r2, _r3),
+        (_r4, _r5, _r6, _r7),
+        (_r8, _r9, _r10, _r11),
+        (_r12, _r13, _r14, _r15),
+    )
+}
+
+#[inline(always)]
+pub(crate) fn avx512_transpose_16x16_u32<const FLOP: bool, const FLIP: bool>(
+    src: &[u8],
+    src_stride: usize,
+    dst: &mut [u8],
+    dst_stride: usize,
+) {
+    unsafe {
+        let row0 = _mm512_loadu_si512(src.get_unchecked(0..).as_ptr() as *const _);
+        let row1 = _mm512_loadu_si512(src.get_unchecked(src_stride..).as_ptr() as *const _);
+        let row2 = _mm512_loadu_si512(src.get_unchecked(2 * src_stride..).as_ptr() as *const _);
+        let row3 = _mm512_loadu_si512(src.get_unchecked(3 * src_stride..).as_ptr() as *const _);
+
+        let row4 = _mm512_loadu_si512(src.get_unchecked(4 * src_stride..).as_ptr() as *const _);
+        let row5 = _mm512_loadu_si512(src.get_unchecked(5 * src_stride..).as_ptr() as *const _);
+        let row6 = _mm512_loadu_si512(src.get_unchecked(6 * src_stride..).as_ptr() as *const _);
+        let row7 = _mm512_loadu_si512(src.get_unchecked(7 * src_stride..).as_ptr() as *const _);
+
+        let row8 = _mm512_loadu_si512(src.get_unchecked(8 * src_stride..).as_ptr() as *const _);
+        let row9 = _mm512_loadu_si512(src.get_unchecked(9 * src_stride..).as_ptr() as *const _);
+        let row10 = _mm512_loadu_si512(src.get_unchecked(10 * src_stride..).as_ptr() as *const _);
+        let row11 = _mm512_loadu_si512(src.get_unchecked(11 * src_stride..).as_ptr() as *const _);
+
+        let row12 = _mm512_loadu_si512(src.get_unchecked(12 * src_stride..).as_ptr() as *const _);
+        let row13 = _mm512_loadu_si512(src.get_unchecked(13 * src_stride..).as_ptr() as *const _);
+        let row14 = _mm512_loadu_si512(src.get_unchecked(14 * src_stride..).as_ptr() as *const _);
+        let row15 = _mm512_loadu_si512(src.get_unchecked(15 * src_stride..).as_ptr() as *const _);
+
+        let (v0, v1, v2, v3) = avx512_transpose_16x16_impl::<FLIP>(
+            (row0, row1, row2, row3),
+            (row4, row5, row6, row7),
+            (row8, row9, row10, row11),
+            (row12, row13, row14, row15),
+        );
+
+        if FLOP {
+            _mm512_storeu_si512(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.0);
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr() as *mut _,
+                v0.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr() as *mut _,
+                v0.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr() as *mut _,
+                v0.3,
+            );
+
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.3,
+            );
+
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(8 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(9 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(10 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(11 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.3,
+            );
+
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(12 * dst_stride..).as_mut_ptr() as *mut _,
+                v3.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(13 * dst_stride..).as_mut_ptr() as *mut _,
+                v3.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(14 * dst_stride..).as_mut_ptr() as *mut _,
+                v3.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(15 * dst_stride..).as_mut_ptr() as *mut _,
+                v3.3,
+            );
+        } else {
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(15 * dst_stride..).as_mut_ptr() as *mut _,
+                v0.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(14 * dst_stride..).as_mut_ptr() as *mut _,
+                v0.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(13 * dst_stride..).as_mut_ptr() as *mut _,
+                v0.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(12 * dst_stride..).as_mut_ptr() as *mut _,
+                v0.3,
+            );
+
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(11 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(10 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(9 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(8 * dst_stride..).as_mut_ptr() as *mut _,
+                v1.3,
+            );
+
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(7 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(6 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(5 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.2,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(4 * dst_stride..).as_mut_ptr() as *mut _,
+                v2.3,
+            );
+
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr() as *mut _,
+                v3.0,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr() as *mut _,
+                v3.1,
+            );
+            _mm512_storeu_si512(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr() as *mut _,
+                v3.2,
+            );
+            _mm512_storeu_si512(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v3.3);
+        }
+    }
 }
