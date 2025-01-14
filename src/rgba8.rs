@@ -28,10 +28,18 @@
  */
 use crate::{FlipMode, FlopMode, TransposeError};
 
+#[cfg(any(
+    all(target_arch = "aarch64", feature = "unsafe"),
+    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
+))]
 trait TransposeBlock {
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize);
 }
 
+#[cfg(any(
+    all(target_arch = "aarch64", feature = "unsafe"),
+    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
+))]
 fn transpose_section<const CN: usize, const FLOP: bool, const FLIP: bool>(
     input: &[u8],
     input_stride: usize,
@@ -61,7 +69,7 @@ fn transpose_section<const CN: usize, const FLOP: bool, const FLIP: bool>(
             }
             #[cfg(not(feature = "unsafe"))]
             {
-                for i in 0..N {
+                for i in 0..CN {
                     output[output_index + i] = input[input_index + i];
                 }
             }
@@ -93,6 +101,10 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockNeon8x
     }
 }
 
+#[cfg(any(
+    all(target_arch = "aarch64", feature = "unsafe"),
+    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
+))]
 #[inline(always)]
 fn transpose_executor<
     const BLOCK_SIZE: usize,
@@ -401,7 +413,7 @@ pub fn transpose_rgba8_chunked(
             height,
             flip_mode,
             flop_mode,
-        )
+        )?;
     }
     #[cfg(any(
         all(target_arch = "aarch64", feature = "unsafe"),
