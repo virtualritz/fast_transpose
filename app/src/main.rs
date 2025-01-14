@@ -35,9 +35,9 @@ use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
 
 fn main() {
-    let img = ImageReader::open("assets/s.jpg").unwrap().decode().unwrap();
+    let img = ImageReader::open("assets/bench.jpg").unwrap().decode().unwrap();
 
-    let j: [u8; 4] = [0, 1, 2, 3];
+    let j: [u8; 4] = [3, 2, 1, 0];
     let mut arr = vec![];
     for i in 0..16 {
         let scale = i * 4;
@@ -100,7 +100,7 @@ fn main() {
         dimensions.0 as usize,
         dimensions.1 as usize,
         FlipMode::Flip,
-        FlopMode::Flop,
+        FlopMode::NoFlop,
     )
     .unwrap();
 

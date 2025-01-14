@@ -296,35 +296,31 @@ unsafe fn avx512_transpose_16x16_impl<const FLIP: bool>(
     let _r15 = _mm512_shuffle_i32x4::<R_16>(_tmpe, _tmpf);
 
     if FLIP {
-        let flipper = _mm512_set_epi8(
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
-            46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-        );
+        let flipper = _mm512_set_epi32(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
         (
             (
-                _mm512_shuffle_epi8(_r0, flipper),
-                _mm512_shuffle_epi8(_r1, flipper),
-                _mm512_shuffle_epi8(_r2, flipper),
-                _mm512_shuffle_epi8(_r3, flipper),
+                _mm512_permutexvar_epi32(flipper, _r0),
+                _mm512_permutexvar_epi32(flipper, _r1),
+                _mm512_permutexvar_epi32(flipper, _r2),
+                _mm512_permutexvar_epi32(flipper, _r3),
             ),
             (
-                _mm512_shuffle_epi8(_r4, flipper),
-                _mm512_shuffle_epi8(_r5, flipper),
-                _mm512_shuffle_epi8(_r6, flipper),
-                _mm512_shuffle_epi8(_r7, flipper),
+                _mm512_permutexvar_epi32(flipper, _r4),
+                _mm512_permutexvar_epi32(flipper, _r5),
+                _mm512_permutexvar_epi32(flipper, _r6),
+                _mm512_permutexvar_epi32(flipper, _r7),
             ),
             (
-                _mm512_shuffle_epi8(_r8, flipper),
-                _mm512_shuffle_epi8(_r9, flipper),
-                _mm512_shuffle_epi8(_r10, flipper),
-                _mm512_shuffle_epi8(_r11, flipper),
+                _mm512_permutexvar_epi32(flipper, _r8),
+                _mm512_permutexvar_epi32(flipper, _r9),
+                _mm512_permutexvar_epi32(flipper, _r10),
+                _mm512_permutexvar_epi32(flipper, _r11),
             ),
             (
-                _mm512_shuffle_epi8(_r12, flipper),
-                _mm512_shuffle_epi8(_r13, flipper),
-                _mm512_shuffle_epi8(_r14, flipper),
-                _mm512_shuffle_epi8(_r15, flipper),
+                _mm512_permutexvar_epi32(flipper, _r12),
+                _mm512_permutexvar_epi32(flipper, _r13),
+                _mm512_permutexvar_epi32(flipper, _r14),
+                _mm512_permutexvar_epi32(flipper, _r15),
             ),
         )
     } else {

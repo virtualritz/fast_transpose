@@ -30,6 +30,7 @@ mod utils;
 mod x4_u32;
 mod x8_u32;
 
+#[cfg(feature = "nightly_avx512")]
 pub(crate) use utils::_mm_shuffle;
 pub(crate) use x4_u32::sse_transpose_4x4_u32x1;
 pub(crate) use x8_u32::sse_transpose_8x8_u32x1;

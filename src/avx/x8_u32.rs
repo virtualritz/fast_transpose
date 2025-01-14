@@ -33,11 +33,6 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 #[inline(always)]
-unsafe fn _mm256_swaphi(v: __m256i) -> __m256i {
-    _mm256_permute2x128_si256::<0x01>(v, v)
-}
-
-#[inline(always)]
 #[allow(clippy::type_complexity)]
 unsafe fn avx_transpose_8x8_impl<const FLIP: bool>(
     v0: (__m256i, __m256i, __m256i, __m256i),
@@ -105,22 +100,19 @@ unsafe fn avx_transpose_8x8_impl<const FLIP: bool>(
     let r7 = _mm256_permute2x128_si256::<0x31>(tt3, tt7);
 
     if FLIP {
-        let rsh = _mm256_setr_epi8(
-            12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11, 4,
-            5, 6, 7, 0, 1, 2, 3,
-        );
+        let flipper = _mm256_set_epi32(0,1,2,3,4,5,6,7);
         (
             (
-                _mm256_swaphi(_mm256_shuffle_epi8(r0, rsh)),
-                _mm256_swaphi(_mm256_shuffle_epi8(r1, rsh)),
-                _mm256_swaphi(_mm256_shuffle_epi8(r2, rsh)),
-                _mm256_swaphi(_mm256_shuffle_epi8(r3, rsh)),
+                _mm256_permutevar8x32_epi32(r0, flipper),
+                _mm256_permutevar8x32_epi32(r1, flipper),
+                _mm256_permutevar8x32_epi32(r2, flipper),
+                _mm256_permutevar8x32_epi32(r3, flipper),
             ),
             (
-                _mm256_swaphi(_mm256_shuffle_epi8(r4, rsh)),
-                _mm256_swaphi(_mm256_shuffle_epi8(r5, rsh)),
-                _mm256_swaphi(_mm256_shuffle_epi8(r6, rsh)),
-                _mm256_swaphi(_mm256_shuffle_epi8(r7, rsh)),
+                _mm256_permutevar8x32_epi32(r4, flipper),
+                _mm256_permutevar8x32_epi32(r5, flipper),
+                _mm256_permutevar8x32_epi32(r6, flipper),
+                _mm256_permutevar8x32_epi32(r7, flipper),
             ),
         )
     } else {
