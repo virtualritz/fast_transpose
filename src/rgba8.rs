@@ -397,7 +397,7 @@ unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
     any(target_arch = "x86", target_arch = "x86_64"),
     feature = "nightly_avx512"
 ))]
-#[target_feature(enable = "avx512f")]
+#[target_feature(enable = "avx512bw")]
 unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
     input_stride: usize,
@@ -554,7 +554,7 @@ pub fn transpose_rgba8_chunked(
                 };
             }
 
-            if std::arch::is_x86_feature_detected!("avx512f") {
+            if std::arch::is_x86_feature_detected!("avx512bw") {
                 executor = match flip_mode {
                     FlipMode::NoFlip => match flop_mode {
                         FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,

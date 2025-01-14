@@ -178,13 +178,46 @@ unsafe fn avx512_transpose_16x16_impl<const FLIP: bool>(
     const R_16: i32 = _mm_shuffle(3, 1, 3, 1);
     let _r15 = _mm512_castps_si512(_mm512_shuffle_f32x4::<R_16>(_tmpe, _tmpf));
 
-    // TODO: FLip
-    (
-        (_r0, _r1, _r2, _r3),
-        (_r4, _r5, _r6, _r7),
-        (_r8, _r9, _r10, _r11),
-        (_r12, _r13, _r14, _r15),
-    )
+    if FLIP {
+        let flipper = _mm512_set_epi8(
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+            46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+        );
+        (
+            (
+                _mm512_shuffle_epi8(_r0, flipper),
+                _mm512_shuffle_epi8(_r1, flipper),
+                _mm512_shuffle_epi8(_r2, flipper),
+                _mm512_shuffle_epi8(_r3, flipper),
+            ),
+            (
+                _mm512_shuffle_epi8(_r4, flipper),
+                _mm512_shuffle_epi8(_r5, flipper),
+                _mm512_shuffle_epi8(_r6, flipper),
+                _mm512_shuffle_epi8(_r7, flipper),
+            ),
+            (
+                _mm512_shuffle_epi8(_r8, flipper),
+                _mm512_shuffle_epi8(_r9, flipper),
+                _mm512_shuffle_epi8(_r10, flipper),
+                _mm512_shuffle_epi8(_r11, flipper),
+            ),
+            (
+                _mm512_shuffle_epi8(_r12, flipper),
+                _mm512_shuffle_epi8(_r13, flipper),
+                _mm512_shuffle_epi8(_r14, flipper),
+                _mm512_shuffle_epi8(_r15, flipper),
+            ),
+        )
+    } else {
+        (
+            (_r0, _r1, _r2, _r3),
+            (_r4, _r5, _r6, _r7),
+            (_r8, _r9, _r10, _r11),
+            (_r12, _r13, _r14, _r15),
+        )
+    }
 }
 
 #[inline(always)]

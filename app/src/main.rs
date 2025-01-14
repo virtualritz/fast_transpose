@@ -37,6 +37,17 @@ use std::time::Instant;
 fn main() {
     let img = ImageReader::open("assets/s.jpg").unwrap().decode().unwrap();
 
+    let j: [u8; 4] = [0, 1, 2, 3];
+    let mut arr = vec![];
+    for i in 0..16 {
+        let scale = i * 4;
+        arr.push(j[0] + scale);
+        arr.push(j[1] + scale);
+        arr.push(j[2] + scale);
+        arr.push(j[3] + scale);
+    }
+    println!("{:?}", arr);
+
     let img = DynamicImage::ImageRgba8(img.to_rgba8());
 
     let dimensions = img.dimensions();

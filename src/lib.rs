@@ -34,6 +34,11 @@
 #![deny(unreachable_pub)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 mod avx;
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+mod avx512;
 mod flip;
 mod float_32;
 mod flop;
@@ -48,8 +53,6 @@ mod transpose_arbitrary_group;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "nightly_avx512"))]
-mod avx512;
 
 pub use flip::{
     flip_arbitrary, flip_plane, flip_plane16, flip_plane16_with_alpha, flip_plane_f32,
