@@ -29,17 +29,22 @@
 #![allow(clippy::too_many_arguments)]
 #![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
 #![deny(unreachable_pub)]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+mod avx;
 mod flip;
 mod float_32;
 mod flop;
+#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+mod neon;
+mod rgba8;
 mod rotate180;
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+mod sse;
 mod transpose_arbitrary;
 mod transpose_arbitrary_group;
 mod unsigned_16;
 mod unsigned_8;
 mod utils;
-mod neon;
-mod rgba8;
 
 pub use flip::{
     flip_arbitrary, flip_plane, flip_plane16, flip_plane16_with_alpha, flip_plane_f32,
@@ -54,6 +59,7 @@ pub use flop::{
     flop_plane_f32_with_alpha, flop_plane_with_alpha, flop_rgb, flop_rgb16, flop_rgb_f32,
     flop_rgba, flop_rgba16, flop_rgba_f32,
 };
+pub use rgba8::transpose_rgba8_chunked;
 pub use rotate180::{
     rotate180_arbitrary, rotate180_plane, rotate180_plane16, rotate180_plane16_with_alpha,
     rotate180_plane_f32, rotate180_plane_f32_with_alpha, rotate180_plane_with_alpha, rotate180_rgb,
@@ -65,4 +71,3 @@ pub use unsigned_16::{
 };
 pub use unsigned_8::{transpose_plane, transpose_plane_with_alpha, transpose_rgb, transpose_rgba};
 pub use utils::{FlipMode, FlopMode, TransposeError};
-pub use rgba8::transpose_rgba8_chunked;

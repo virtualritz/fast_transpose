@@ -28,7 +28,10 @@
  */
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use fast_transpose::{flip_rgba, rotate180_rgba, transpose_rgba, transpose_rgba16, transpose_rgba8_chunked, transpose_rgba_f32, FlipMode, FlopMode};
+use fast_transpose::{
+    flip_rgba, rotate180_rgba, transpose_rgba, transpose_rgba16, transpose_rgba8_chunked,
+    transpose_rgba_f32, FlipMode, FlopMode,
+};
 use image::{DynamicImage, ImageReader};
 use yuv_sys::{RotationMode_kRotate180, RotationMode_kRotate270, RotationMode_kRotate90};
 
@@ -71,7 +74,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 FlipMode::Flip,
                 FlopMode::NoFlop,
             )
-                .unwrap();
+            .unwrap();
         });
     });
 

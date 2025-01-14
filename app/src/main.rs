@@ -26,15 +26,16 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-use fast_transpose::{flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary, transpose_plane_f32, transpose_rgb, transpose_rgba, transpose_rgba8_chunked, FlipMode, FlopMode};
+use fast_transpose::{
+    flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
+    transpose_plane_f32, transpose_rgb, transpose_rgba, transpose_rgba8_chunked, FlipMode,
+    FlopMode,
+};
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
 
 fn main() {
-    let img = ImageReader::open("assets/s.jpg")
-        .unwrap()
-        .decode()
-        .unwrap();
+    let img = ImageReader::open("assets/s.jpg").unwrap().decode().unwrap();
 
     let img = DynamicImage::ImageRgba8(img.to_rgba8());
 
@@ -87,7 +88,7 @@ fn main() {
         dimensions.1 as usize * 4,
         dimensions.0 as usize,
         dimensions.1 as usize,
-        FlipMode::Flip,
+        FlipMode::NoFlip,
         FlopMode::NoFlop,
     )
     .unwrap();

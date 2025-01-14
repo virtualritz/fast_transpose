@@ -26,9 +26,6 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod utils;
-mod x4_u32;
 mod x8_u32;
 
-pub(crate) use x4_u32::neon_transpose_4x4_u8x4;
-pub(crate) use x8_u32::neon_transpose_4x4_u8x4x8;
+pub(crate) use x8_u32::avx_transpose_8x8_u32;

@@ -28,7 +28,7 @@
  */
 use crate::neon::utils::{xvld1q_u8_u32, xvst1q_u8_u32};
 use crate::neon::x4_u32::neon_transpose_4x4_impl;
-use std::arch::aarch64::{uint32x4x4_t};
+use std::arch::aarch64::uint32x4x4_t;
 
 #[inline]
 pub(crate) fn neon_transpose_4x4_u8x4x8<const FLOP: bool, const FLIP: bool>(
