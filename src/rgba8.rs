@@ -554,6 +554,7 @@ pub fn transpose_rgba8_chunked(
                 };
             }
 
+            #[cfg(feature = "nightly_avx512")]
             if std::arch::is_x86_feature_detected!("avx512bw") {
                 executor = match flip_mode {
                     FlipMode::NoFlip => match flop_mode {

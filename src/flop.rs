@@ -122,6 +122,15 @@ struct FlopperAvx2GroupedFactory<V: Copy + Pod + NoUninit + AnyBitPattern, const
     _phantom: std::marker::PhantomData<V>,
 }
 
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+#[derive(Debug, Copy, Clone, Default)]
+struct FlopperAvx512GroupedFactory<V: Copy + Pod + NoUninit + AnyBitPattern, const N: usize> {
+    _phantom: std::marker::PhantomData<V>,
+}
+
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize>
     FlopperAvx2GroupedFactory<V, N>
@@ -139,6 +148,48 @@ where
         width: usize,
     ) {
         flop_grouped_copy!(input, input_stride, output, output_stride, width, N);
+    }
+}
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize>
+    FlopperAvx512GroupedFactory<V, N>
+where
+    V: Default,
+    [V; N]: Pod,
+{
+    #[target_feature(enable = "avx512f")]
+    unsafe fn flop_impl(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    ) {
+        flop_grouped_copy!(input, input_stride, output, output_stride, width, N);
+    }
+}
+
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Flopper<V>
+    for FlopperAvx512GroupedFactory<V, N>
+where
+    V: Default,
+    [V; N]: Pod,
+{
+    fn flop(
+        &self,
+        input: &[V],
+        input_stride: usize,
+        output: &mut [V],
+        output_stride: usize,
+        width: usize,
+    ) {
+        unsafe { self.flop_impl(input, input_stride, output, output_stride, width) }
     }
 }
 
@@ -169,6 +220,10 @@ where
 {
     #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
     fn make_flipper(&self) -> Box<dyn Flopper<V>> {
+        #[cfg(feature = "nightly_avx512")]
+        if std::arch::is_x86_feature_detected!("avx512f") {
+            return Box::new(FlopperAvx512GroupedFactory::<V, N>::default());
+        }
         if std::arch::is_x86_feature_detected!("avx2") {
             return Box::new(FlopperAvx2GroupedFactory::<V, N>::default());
         }
