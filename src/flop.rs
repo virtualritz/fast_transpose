@@ -174,7 +174,10 @@ where
     }
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "nightly_avx512"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
 impl<V: Copy + 'static + Copy + Pod + NoUninit + AnyBitPattern, const N: usize> Flopper<V>
     for FlopperAvx512GroupedFactory<V, N>
 where

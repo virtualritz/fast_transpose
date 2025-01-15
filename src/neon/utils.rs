@@ -29,6 +29,12 @@
 use std::arch::aarch64::*;
 
 #[inline(always)]
+pub(crate) unsafe fn vrev128_u16(a: uint16x8_t) -> uint16x8_t {
+    let rev = vrev64q_u16(a);
+    vcombine_u16(vget_high_u16(rev), vget_low_u16(rev))
+}
+
+#[inline(always)]
 pub(crate) unsafe fn vrev128_u32(a: uint32x4_t) -> uint32x4_t {
     let rev = vrev64q_u32(a);
     vcombine_u32(vget_high_u32(rev), vget_low_u32(rev))

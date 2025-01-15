@@ -32,18 +32,18 @@ use crate::{FlipMode, FlopMode, TransposeError};
     all(target_arch = "aarch64", feature = "unsafe"),
     all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
 ))]
-pub(crate) trait TransposeBlock {
-    fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize);
+pub(crate) trait TransposeBlock<V> {
+    fn transpose_block(&self, src: &[V], src_stride: usize, dst: &mut [V], dst_stride: usize);
 }
 
 #[cfg(any(
     all(target_arch = "aarch64", feature = "unsafe"),
     all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
 ))]
-pub(crate) fn transpose_section<const CN: usize, const FLOP: bool, const FLIP: bool>(
-    input: &[u8],
+pub(crate) fn transpose_section<V: Copy, const CN: usize, const FLOP: bool, const FLIP: bool>(
+    input: &[V],
     input_stride: usize,
-    output: &mut [u8],
+    output: &mut [V],
     output_stride: usize,
     width: usize,
     height: usize,
@@ -81,7 +81,7 @@ pub(crate) fn transpose_section<const CN: usize, const FLOP: bool, const FLIP: b
 struct TransposeBlockNeon4x4<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockNeon4x4<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockNeon4x4<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::neon::neon_transpose_4x4_u8x4;
@@ -93,7 +93,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockNeon4x
 struct TransposeBlockNeon8x8<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockNeon8x8<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockNeon8x8<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::neon::neon_transpose_4x4_u8x4x8;
@@ -107,24 +107,25 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockNeon8x
 ))]
 #[inline(always)]
 pub(crate) fn transpose_executor<
+    V: Copy + Default,
     const BLOCK_SIZE: usize,
     const CN: usize,
     const FLOP: bool,
     const FLIP: bool,
 >(
-    input: &[u8],
+    input: &[V],
     input_stride: usize,
-    output: &mut [u8],
+    output: &mut [V],
     output_stride: usize,
     width: usize,
     height: usize,
     start_y: usize,
-    exec: impl TransposeBlock,
+    exec: impl TransposeBlock<V>,
 ) -> usize {
     let mut y = start_y;
 
-    let mut src_buffer = vec![0; BLOCK_SIZE * BLOCK_SIZE * CN];
-    let mut dst_buffer = vec![0; BLOCK_SIZE * BLOCK_SIZE * CN];
+    let mut src_buffer = vec![V::default(); BLOCK_SIZE * BLOCK_SIZE * CN];
+    let mut dst_buffer = vec![V::default(); BLOCK_SIZE * BLOCK_SIZE * CN];
 
     unsafe {
         while y + BLOCK_SIZE < height {
@@ -203,7 +204,7 @@ pub(crate) fn transpose_executor<
 struct TransposeBlockSSSE34x4<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockSSSE34x4<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockSSSE34x4<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::sse::sse_transpose_4x4_u32x1;
@@ -215,7 +216,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockSSSE34
 struct TransposeBlockSSSE38x8<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockSSSE38x8<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockSSSE38x8<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::sse::sse_transpose_8x8_u32x1;
@@ -227,7 +228,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockSSSE38
 struct TransposeBlockAvx2_8x8<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockAvx2_8x8<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockAvx2_8x8<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::avx::avx_transpose_8x8_u32;
@@ -245,7 +246,9 @@ struct TransposeBlockAvx512_16x16<const FLOP: bool, const FLIP: bool> {}
     any(target_arch = "x86", target_arch = "x86_64"),
     feature = "nightly_avx512"
 ))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock for TransposeBlockAvx512_16x16<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8>
+    for TransposeBlockAvx512_16x16<FLOP, FLIP>
+{
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::avx512::avx512_transpose_16x16_u32;
@@ -266,7 +269,7 @@ fn transpose_rgba8_impl_neon<const FLOP: bool, const FLIP: bool>(
 
     let mut y = 0usize;
 
-    y = transpose_executor::<8, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 8, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -277,7 +280,7 @@ fn transpose_rgba8_impl_neon<const FLOP: bool, const FLIP: bool>(
         TransposeBlockNeon8x8::<FLOP, FLIP> {},
     );
 
-    y = transpose_executor::<4, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 4, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -288,7 +291,7 @@ fn transpose_rgba8_impl_neon<const FLOP: bool, const FLIP: bool>(
         TransposeBlockNeon4x4::<FLOP, FLIP> {},
     );
 
-    transpose_section::<CN, FLOP, FLIP>(
+    transpose_section::<u8, CN, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -313,7 +316,7 @@ unsafe fn transpose_rgba8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
 
     let mut y = 0usize;
 
-    y = transpose_executor::<8, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 8, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -324,7 +327,7 @@ unsafe fn transpose_rgba8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
         TransposeBlockSSSE38x8::<FLOP, FLIP> {},
     );
 
-    y = transpose_executor::<4, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 4, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -335,7 +338,7 @@ unsafe fn transpose_rgba8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
         TransposeBlockSSSE34x4::<FLOP, FLIP> {},
     );
 
-    transpose_section::<CN, FLOP, FLIP>(
+    transpose_section::<u8, CN, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -360,7 +363,7 @@ unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
 
     let mut y = 0usize;
 
-    y = transpose_executor::<8, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 8, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -371,7 +374,7 @@ unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
         TransposeBlockAvx2_8x8::<FLOP, FLIP> {},
     );
 
-    y = transpose_executor::<4, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 4, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -382,7 +385,7 @@ unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
         TransposeBlockSSSE34x4::<FLOP, FLIP> {},
     );
 
-    transpose_section::<CN, FLOP, FLIP>(
+    transpose_section::<u8, CN, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -410,7 +413,7 @@ unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
 
     let mut y = 0usize;
 
-    y = transpose_executor::<16, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 16, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -421,7 +424,7 @@ unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
         TransposeBlockAvx512_16x16::<FLOP, FLIP> {},
     );
 
-    y = transpose_executor::<8, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 8, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -432,7 +435,7 @@ unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
         TransposeBlockAvx2_8x8::<FLOP, FLIP> {},
     );
 
-    y = transpose_executor::<4, 4, FLOP, FLIP>(
+    y = transpose_executor::<u8, 4, 4, FLOP, FLIP>(
         input,
         input_stride,
         output,
@@ -443,7 +446,7 @@ unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
         TransposeBlockSSSE34x4::<FLOP, FLIP> {},
     );
 
-    transpose_section::<CN, FLOP, FLIP>(
+    transpose_section::<u8, CN, FLOP, FLIP>(
         input,
         input_stride,
         output,

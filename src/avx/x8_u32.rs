@@ -100,7 +100,7 @@ unsafe fn avx_transpose_8x8_impl<const FLIP: bool>(
     let r7 = _mm256_permute2x128_si256::<0x31>(tt3, tt7);
 
     if FLIP {
-        let flipper = _mm256_set_epi32(0,1,2,3,4,5,6,7);
+        let flipper = _mm256_set_epi32(0, 1, 2, 3, 4, 5, 6, 7);
         (
             (
                 _mm256_permutevar8x32_epi32(r0, flipper),

@@ -26,13 +26,17 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+mod u16_4x4;
+mod u16_8x8;
+mod u8_8x8;
 mod utils;
 mod x4_u32;
 mod x8_u32;
-mod u8_8x8;
 
+pub(crate) use u16_4x4::sse_transpose_4x4_u16;
+pub(crate) use u16_8x8::sse_transpose_8x8_u16;
+pub(crate) use u8_8x8::sse_transpose_u8_8x8;
 #[cfg(feature = "nightly_avx512")]
 pub(crate) use utils::_mm_shuffle;
 pub(crate) use x4_u32::sse_transpose_4x4_u32x1;
 pub(crate) use x8_u32::sse_transpose_8x8_u32x1;
-pub(crate) use u8_8x8::sse_transpose_u8_8x8;
