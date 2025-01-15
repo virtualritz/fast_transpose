@@ -147,9 +147,9 @@ pub(crate) fn transpose_executor<
             }
 
             if x < width {
-                let rem_x = width - x - 1;
+                let rem_x = width - x;
                 assert!(
-                    rem_x < BLOCK_SIZE,
+                    rem_x <= BLOCK_SIZE,
                     "Remainder is expected to be less than {}, but got {}",
                     BLOCK_SIZE,
                     rem_x,

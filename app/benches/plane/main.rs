@@ -79,7 +79,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("FT Rotate 90: Plane u16", |b| {
         let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
         b.iter(|| {
-            transpose_plane16_chunked(
+            transpose_plane16(
                 &img16,
                 dimensions.0 as usize,
                 &mut transposed,
@@ -90,21 +90,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 FlopMode::NoFlop,
             )
             .unwrap();
-        });
-    });
-
-    c.bench_function("Libyuv Rotate 90: Plane u16", |b| {
-        let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
-        b.iter(|| unsafe {
-            yuv_sys::rs_RotatePlane_16(
-                img16.as_ptr(),
-                dimensions.0 as i32 * 2,
-                transposed.as_mut_ptr(),
-                dimensions.1 as i32 * 2,
-                dimensions.0 as i32,
-                dimensions.1 as i32,
-                RotationMode_kRotate90,
-            );
         });
     });
 

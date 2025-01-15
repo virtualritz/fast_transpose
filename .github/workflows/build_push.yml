@@ -66,5 +66,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
       - run: cargo fuzz run plane8 -- -max_total_time=15
+      - run: cargo fuzz run cbcr8 -- -max_total_time=15
       - run: cargo fuzz run rgba8 -- -max_total_time=15
       - run: cargo fuzz run plane16 -- -max_total_time=15
