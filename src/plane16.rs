@@ -26,6 +26,10 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#[cfg(any(
+    all(target_arch = "aarch64", feature = "unsafe"),
+    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
+))]
 use crate::rgba8::{transpose_executor, transpose_section, TransposeBlock};
 use crate::{FlipMode, FlopMode, TransposeError};
 
