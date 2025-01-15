@@ -32,14 +32,13 @@ use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
+struct M128x4(__m128i, __m128i, __m128i, __m128i);
+
 #[inline(always)]
 unsafe fn sse_transpose_u16_8x8_impl<const FLIP: bool>(
     v0: (__m128i, __m128i, __m128i, __m128i),
     v1: (__m128i, __m128i, __m128i, __m128i),
-) -> (
-    (__m128i, __m128i, __m128i, __m128i),
-    (__m128i, __m128i, __m128i, __m128i),
-) {
+) -> (M128x4, M128x4) {
     // Unpack 16 bit elements. Goes from:
     // in[0]: 00 01 02 03  04 05 06 07
     // in[1]: 10 11 12 13  14 15 16 17
@@ -105,13 +104,13 @@ unsafe fn sse_transpose_u16_8x8_impl<const FLIP: bool>(
     if FLIP {
         let flipper = _mm_setr_epi8(14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1);
         (
-            (
+            M128x4(
                 _mm_shuffle_epi8(a0, flipper),
                 _mm_shuffle_epi8(a1, flipper),
                 _mm_shuffle_epi8(a2, flipper),
                 _mm_shuffle_epi8(a3, flipper),
             ),
-            (
+            M128x4(
                 _mm_shuffle_epi8(a4, flipper),
                 _mm_shuffle_epi8(a5, flipper),
                 _mm_shuffle_epi8(a6, flipper),
@@ -119,7 +118,7 @@ unsafe fn sse_transpose_u16_8x8_impl<const FLIP: bool>(
             ),
         )
     } else {
-        ((a0, a1, a2, a3), (a4, a5, a6, a7))
+        (M128x4(a0, a1, a2, a3), M128x4(a4, a5, a6, a7))
     }
 }
 
