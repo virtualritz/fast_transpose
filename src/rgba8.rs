@@ -147,8 +147,13 @@ pub(crate) fn transpose_executor<
             }
 
             if x < width {
-                let rem_x = width - x;
-                assert!(rem_x < CN * BLOCK_SIZE);
+                let rem_x = width - x - 1;
+                assert!(
+                    rem_x < BLOCK_SIZE,
+                    "Remainder is expected to be less than {}, but got {}",
+                    BLOCK_SIZE,
+                    rem_x,
+                );
 
                 let output_x = if FLOP { x } else { 0 };
                 let src = src.get_unchecked(x * CN..);
