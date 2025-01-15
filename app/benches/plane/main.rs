@@ -29,16 +29,18 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use fast_transpose::{
-    flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane_f32, FlipMode,
-    FlopMode,
+    flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane16_chunked,
+    transpose_plane_f32, FlipMode, FlopMode,
 };
 use image::{DynamicImage, ImageReader};
+use yuv_sys::RotationMode_kRotate90;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let img = ImageReader::open("../assets/sonderland.jpg")
+    let img = ImageReader::open("../assets/bench.jpg")
         .unwrap()
         .decode()
         .unwrap();
+    let img16 = img.to_luma16();
     let img = img.to_luma8();
     let dimensions = img.dimensions();
     let components = 1;
@@ -70,6 +72,38 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 dimensions.1 as i32,
                 dimensions.0 as i32,
                 dimensions.1 as i32,
+            );
+        });
+    });
+
+    c.bench_function("FT Rotate 90: Plane u16", |b| {
+        let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| {
+            transpose_plane16_chunked(
+                &img16,
+                dimensions.0 as usize,
+                &mut transposed,
+                dimensions.1 as usize,
+                dimensions.0 as usize,
+                dimensions.1 as usize,
+                FlipMode::NoFlip,
+                FlopMode::NoFlop,
+            )
+            .unwrap();
+        });
+    });
+
+    c.bench_function("Libyuv Rotate 90: Plane u16", |b| {
+        let mut transposed = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * components];
+        b.iter(|| unsafe {
+            yuv_sys::rs_RotatePlane_16(
+                img16.as_ptr(),
+                dimensions.0 as i32 * 2,
+                transposed.as_mut_ptr(),
+                dimensions.1 as i32 * 2,
+                dimensions.0 as i32,
+                dimensions.1 as i32,
+                RotationMode_kRotate90,
             );
         });
     });

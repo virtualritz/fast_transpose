@@ -370,9 +370,25 @@ struct SSSE3Flipper<V: Copy> {
 
 define_flipper_x86!(SSSE3Flipper, "ssse3");
 
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "nightly_avx512"
+))]
+#[derive(Debug, Copy, Clone, Default)]
+struct Avx512Flipper<V: Copy> {
+    _phantom: std::marker::PhantomData<V>,
+}
+
+#[cfg(feature = "nightly_avx512")]
+define_flipper_x86!(Avx512Flipper, "avx512bw");
+
 impl<V: Copy + Default + 'static> FlipperFactory<V> {
     #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
     fn make_flipper(&self) -> Box<dyn Flipper<V>> {
+        #[cfg(feature = "nightly_avx512")]
+        if std::arch::is_x86_feature_detected!("avx512bw") {
+            return Box::new(Avx512Flipper::<V>::default());
+        }
         if std::arch::is_x86_feature_detected!("avx2") {
             return Box::new(Avx2Flipper::<V>::default());
         }

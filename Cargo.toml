@@ -1,8 +1,8 @@
-workspace = { members = ["app"] }
+workspace = { members = ["app", "fuzz"] }
 
 [package]
 name = "fast_transpose"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "Fast image and matrix transpose"
 readme = "README.md"
@@ -21,6 +21,7 @@ bytemuck = "1.19.0"
 [features]
 default = ["unsafe"]
 unsafe = []
+nightly_avx512 = ["unsafe"]
 
 [profile.dev.package]
 miniz_oxide.opt-level = 3

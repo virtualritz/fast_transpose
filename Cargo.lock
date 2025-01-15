@@ -54,6 +54,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "app-fuzz"
+version = "0.0.0"
+dependencies = [
+ "fast_transpose",
+ "libfuzzer-sys",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -408,7 +416,7 @@ dependencies = [
 
 [[package]]
 name = "fast_transpose"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bytemuck",
 ]

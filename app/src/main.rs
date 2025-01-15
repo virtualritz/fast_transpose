@@ -28,29 +28,43 @@
  */
 use fast_transpose::{
     flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
-    transpose_plane_f32, transpose_rgb, FlipMode, FlopMode,
+    transpose_plane, transpose_plane16, transpose_plane16_chunked, transpose_plane_f32,
+    transpose_rgb, transpose_rgba, FlipMode, FlopMode,
 };
-use image::{ColorType, GenericImageView, ImageReader};
+use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
 
 fn main() {
-    let img = ImageReader::open("assets/sonderland.jpg")
+    let img = ImageReader::open("assets/bench.jpg")
         .unwrap()
         .decode()
         .unwrap();
 
+    let j: [u8; 4] = [3, 2, 1, 0];
+    let mut arr = vec![];
+    for i in 0..16 {
+        let scale = i * 4;
+        arr.push(j[0] + scale);
+        arr.push(j[1] + scale);
+        arr.push(j[2] + scale);
+        arr.push(j[3] + scale);
+    }
+    println!("{:?}", arr);
+
+    let img = DynamicImage::ImageRgb8(img.to_rgb8());
+
     let dimensions = img.dimensions();
     let components = if img.color() == ColorType::Rgb8 { 3 } else { 4 };
-    let img_bytes = img
-        .to_luma8()
-        .iter()
-        .map(|&x| x as f32 / 255.0)
-        .collect::<Vec<_>>();
+    // let img_bytes = img
+    //     .to_luma8()
+    //     .iter()
+    //     .map(|&x| x as f32 / 255.0)
+    //     .collect::<Vec<_>>();
 
     let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
     let mut transposed_rgb = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
 
-    let rgb_bytes = img.to_rgb8();
+    let rgb_bytes = img.to_rgba8();
 
     let rgb_set = img
         .as_bytes()
@@ -60,12 +74,12 @@ fn main() {
 
     let start = Instant::now();
 
-    transpose::transpose(
-        &rgb_set,
-        &mut transposed_rgb,
-        dimensions.0 as usize,
-        dimensions.1 as usize,
-    );
+    // transpose::transpose(
+    //     &rgb_set,
+    //     &mut transposed_rgb,
+    //     dimensions.0 as usize,
+    //     dimensions.1 as usize,
+    // );
 
     println!("Transpose exec time {:?}", start.elapsed());
 
@@ -81,17 +95,83 @@ fn main() {
     // )
     // .unwrap();
 
-    transpose_rgb(
-        &rgb_bytes,
-        dimensions.0 as usize * 3,
-        &mut transposed,
-        dimensions.1 as usize * 3,
+    let mut c1 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c2 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c3 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+
+    let mut c1_d = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c2_d = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+    let mut c3_d = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+
+    for (((o1, o2), o3), src) in c1
+        .iter_mut()
+        .zip(c2.iter_mut())
+        .zip(c3.iter_mut())
+        .zip(img.to_rgb8().chunks_exact(3))
+    {
+        *o1 = src[0] as u16;
+        *o2 = src[1] as u16;
+        *o3 = src[2] as u16;
+    }
+
+    transpose_plane16_chunked(
+        &c1,
+        dimensions.0 as usize,
+        &mut c1_d,
+        dimensions.1 as usize,
         dimensions.0 as usize,
         dimensions.1 as usize,
         FlipMode::Flip,
         FlopMode::Flop,
     )
     .unwrap();
+
+    transpose_plane16_chunked(
+        &c2,
+        dimensions.0 as usize,
+        &mut c2_d,
+        dimensions.1 as usize,
+        dimensions.0 as usize,
+        dimensions.1 as usize,
+        FlipMode::Flip,
+        FlopMode::Flop,
+    )
+    .unwrap();
+
+    transpose_plane16_chunked(
+        &c3,
+        dimensions.0 as usize,
+        &mut c3_d,
+        dimensions.1 as usize,
+        dimensions.0 as usize,
+        dimensions.1 as usize,
+        FlipMode::Flip,
+        FlopMode::Flop,
+    )
+    .unwrap();
+
+    for (((o1, o2), o3), src) in c1_d
+        .iter()
+        .zip(c2_d.iter())
+        .zip(c3_d.iter())
+        .zip(transposed.chunks_exact_mut(3))
+    {
+        src[0] = *o1 as u8;
+        src[1] = *o2 as u8;
+        src[2] = *o3 as u8;
+    }
+
+    // transpose_rgba(
+    //     &rgb_bytes,
+    //     dimensions.0 as usize * 4,
+    //     &mut transposed,
+    //     dimensions.1 as usize * 4,
+    //     dimensions.0 as usize,
+    //     dimensions.1 as usize,
+    //     FlipMode::Flip,
+    //     FlopMode::NoFlop,
+    // )
+    // .unwrap();
 
     println!("Exec time {:?}", start.elapsed());
 
