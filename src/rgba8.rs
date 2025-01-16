@@ -355,54 +355,6 @@ unsafe fn transpose_rgba8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
 }
 
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-#[target_feature(enable = "ssse3")]
-unsafe fn transpose_rgba8_fast_impl_ssse3<const FLOP: bool, const FLIP: bool>(
-    input: &[u8],
-    input_stride: usize,
-    output: &mut [u8],
-    output_stride: usize,
-    width: usize,
-    height: usize,
-) {
-    const CN: usize = 4;
-
-    let mut y = 0usize;
-
-    while y + 4 < height {
-        use crate::sse::ssse3_transpose_1x4;
-
-        let input_y = if FLIP { height - 4 - y } else { y };
-
-        let src = input.get_unchecked(input_stride * input_y..);
-
-        let mut x = 0usize;
-
-        while x < width {
-            let output_x = if FLOP { x } else { width - 1 - x };
-
-            let src = src.get_unchecked(x * CN..);
-            let dst = output.get_unchecked_mut(y * CN + output_stride * output_x..);
-
-            ssse3_transpose_1x4::<FLOP, FLIP>(src, input_stride, dst);
-
-            x += 1;
-        }
-
-        y += 4;
-    }
-
-    transpose_section::<u8, CN, FLOP, FLIP>(
-        input,
-        input_stride,
-        output,
-        output_stride,
-        width,
-        height,
-        y,
-    )
-}
-
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 #[target_feature(enable = "avx2")]
 unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
@@ -585,9 +537,6 @@ pub(crate) fn transpose_rgba8_chunked(
                 );
             }
 
-            // Here is 2 base strategies, small images and big ones, big ones transposed by different method
-            const BASE_SQUARE_CUTOFF: usize = 1920 * 1080;
-
             let mut executor: unsafe fn(&[u8], usize, &mut [u8], usize, usize, usize) =
                 match flip_mode {
                     FlipMode::NoFlip => match flop_mode {
@@ -600,44 +549,31 @@ pub(crate) fn transpose_rgba8_chunked(
                     },
                 };
 
-            if width * height < BASE_SQUARE_CUTOFF {
+            if std::arch::is_x86_feature_detected!("avx2") {
                 executor = match flip_mode {
                     FlipMode::NoFlip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_fast_impl_ssse3::<false, false>,
-                        FlopMode::Flop => transpose_rgba8_fast_impl_ssse3::<true, false>,
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, false>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx2::<true, false>,
                     },
                     FlipMode::Flip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_fast_impl_ssse3::<false, true>,
-                        FlopMode::Flop => transpose_rgba8_fast_impl_ssse3::<true, true>,
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, true>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx2::<true, true>,
                     },
                 };
-            } else {
-                if std::arch::is_x86_feature_detected!("avx2") {
-                    executor = match flip_mode {
-                        FlipMode::NoFlip => match flop_mode {
-                            FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, false>,
-                            FlopMode::Flop => transpose_rgba8_impl_avx2::<true, false>,
-                        },
-                        FlipMode::Flip => match flop_mode {
-                            FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, true>,
-                            FlopMode::Flop => transpose_rgba8_impl_avx2::<true, true>,
-                        },
-                    };
-                }
+            }
 
-                #[cfg(feature = "nightly_avx512")]
-                if std::arch::is_x86_feature_detected!("avx512bw") {
-                    executor = match flip_mode {
-                        FlipMode::NoFlip => match flop_mode {
-                            FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
-                            FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
-                        },
-                        FlipMode::Flip => match flop_mode {
-                            FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
-                            FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
-                        },
-                    };
-                }
+            #[cfg(feature = "nightly_avx512")]
+            if std::arch::is_x86_feature_detected!("avx512bw") {
+                executor = match flip_mode {
+                    FlipMode::NoFlip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
+                    },
+                    FlipMode::Flip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
+                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
+                    },
+                };
             }
 
             unsafe { executor(input, input_stride, output, output_stride, width, height) }
