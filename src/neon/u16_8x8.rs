@@ -30,7 +30,7 @@ use crate::neon::utils::{vrev128_u16, vtrnq_u64_to_u16};
 use std::arch::aarch64::*;
 
 #[inline(always)]
-unsafe fn neon_transpose_u16_4x4_impl<const FLIP: bool>(
+pub(crate) unsafe fn neon_transpose_u16_4x4_impl<const FLIP: bool>(
     v0: uint16x8x4_t,
     v1: uint16x8x4_t,
 ) -> (uint16x8x4_t, uint16x8x4_t) {

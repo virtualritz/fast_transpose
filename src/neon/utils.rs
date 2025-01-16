@@ -81,3 +81,23 @@ pub(crate) unsafe fn xvld1q_u8_u32(ptr: *const u8) -> uint32x4_t {
 pub(crate) unsafe fn xvst1q_u8_u32(ptr: *mut u8, a: uint32x4_t) {
     vst1q_u8(ptr, vreinterpretq_u8_u32(a))
 }
+
+#[inline(always)]
+pub(crate) unsafe fn xvld1_u8_u16(ptr: *const u8) -> uint16x4_t {
+    vreinterpret_u16_u8(vld1_u8(ptr))
+}
+
+#[inline(always)]
+pub(crate) unsafe fn xvst1_u8_u16(ptr: *mut u8, a: uint16x4_t) {
+    vst1_u8(ptr, vreinterpret_u8_u16(a))
+}
+
+#[inline(always)]
+pub(crate) unsafe fn xvld1q_u8_u16(ptr: *const u8) -> uint16x8_t {
+    vreinterpretq_u16_u8(vld1q_u8(ptr))
+}
+
+#[inline(always)]
+pub(crate) unsafe fn xvst1q_u8_u16(ptr: *mut u8, a: uint16x8_t) {
+    vst1q_u8(ptr, vreinterpretq_u8_u16(a))
+}

@@ -34,16 +34,16 @@ use crate::rgba8::{transpose_executor, transpose_section, TransposeBlock};
 use crate::{FlipMode, FlopMode, TransposeError};
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-struct TransposePlaneBlockNeon8x8<const FLOP: bool, const FLIP: bool> {}
+struct TransposePlaneBlockNeon4x4<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8>
-    for TransposePlaneBlockNeon8x8<FLOP, FLIP>
+    for TransposePlaneBlockNeon4x4<FLOP, FLIP>
 {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
-        use crate::neon::neon_transpose_u8_8x8;
-        neon_transpose_u8_8x8::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+        use crate::neon::neon_transpose_u8x2_4x4;
+        neon_transpose_u8x2_4x4::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
     }
 }
 
@@ -76,16 +76,16 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8>
 }
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-struct TransposePlaneBlockNeon16x16<const FLOP: bool, const FLIP: bool> {}
+struct TransposePlaneBlockNeon8x8<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8>
-    for TransposePlaneBlockNeon16x16<FLOP, FLIP>
+    for TransposePlaneBlockNeon8x8<FLOP, FLIP>
 {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
-        use crate::neon::neon_transpose_u8_16x16;
-        neon_transpose_u8_16x16::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+        use crate::neon::neon_transpose_u8x2_8x8;
+        neon_transpose_u8x2_8x8::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
     }
 }
 
@@ -102,17 +102,6 @@ fn transpose_plane8_impl_neon<const FLOP: bool, const FLIP: bool>(
 
     let mut y = 0usize;
 
-    y = transpose_executor::<u8, 16, CN, FLOP, FLIP>(
-        input,
-        input_stride,
-        output,
-        output_stride,
-        width,
-        height,
-        y,
-        TransposePlaneBlockNeon16x16::<FLOP, FLIP> {},
-    );
-
     y = transpose_executor::<u8, 8, CN, FLOP, FLIP>(
         input,
         input_stride,
@@ -122,6 +111,17 @@ fn transpose_plane8_impl_neon<const FLOP: bool, const FLIP: bool>(
         height,
         y,
         TransposePlaneBlockNeon8x8::<FLOP, FLIP> {},
+    );
+
+    y = transpose_executor::<u8, 4, CN, FLOP, FLIP>(
+        input,
+        input_stride,
+        output,
+        output_stride,
+        width,
+        height,
+        y,
+        TransposePlaneBlockNeon4x4::<FLOP, FLIP> {},
     );
 
     transpose_section::<u8, CN, FLOP, FLIP>(
