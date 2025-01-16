@@ -33,6 +33,7 @@ use fast_transpose::{
     FlopMode,
 };
 use image::{DynamicImage, ImageReader};
+use image::imageops::FilterType;
 use yuv_sys::{RotationMode_kRotate180, RotationMode_kRotate270, RotationMode_kRotate90};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -80,6 +81,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .unwrap()
         .decode()
         .unwrap();
+    let k_img = k_img.resize(3500, 2200, FilterType::CatmullRom);
     let s_img = k_img.to_rgba8();
     let s_dimensions = s_img.dimensions();
 
