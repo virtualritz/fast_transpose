@@ -26,21 +26,36 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod u16_4x4;
-mod u16_8x8;
-mod u8_8x8;
-mod u8x2_4x4;
-mod u8x2_8x8;
-mod utils;
-mod x4_u32;
-mod x8_u32;
+use crate::neon::utils::{xvld1_u8_u16, xvst1_u8_u16};
+use std::arch::aarch64::uint16x4x4_t;
 
-pub(crate) use u16_4x4::sse_transpose_4x4_u16;
-pub(crate) use u16_8x8::sse_transpose_8x8_u16;
-pub(crate) use u8_8x8::sse_transpose_u8_8x8;
-pub(crate) use u8x2_4x4::sse_transpose_u8x2_4x4;
-pub(crate) use u8x2_8x8::sse_transpose_u8x2_8x8;
-#[cfg(feature = "nightly_avx512")]
-pub(crate) use utils::_mm_shuffle;
-pub(crate) use x4_u32::sse_transpose_4x4_u32x1;
-pub(crate) use x8_u32::sse_transpose_8x8_u32x1;
+#[inline]
+pub(crate) fn neon_transpose_u8x2_4x4<const FLOP: bool, const FLIP: bool>(
+    src: &[u8],
+    src_stride: usize,
+    dst: &mut [u8],
+    dst_stride: usize,
+) {
+    unsafe {
+        let row0 = xvld1_u8_u16(src.get_unchecked(0..).as_ptr());
+        let row1 = xvld1_u8_u16(src.get_unchecked(src_stride..).as_ptr());
+        let row2 = xvld1_u8_u16(src.get_unchecked(2 * src_stride..).as_ptr());
+        let row3 = xvld1_u8_u16(src.get_unchecked(3 * src_stride..).as_ptr());
+
+        let v0 = crate::neon::u16_4x4::neon_transpose_u16_4x4_impl::<FLIP>(uint16x4x4_t(
+            row0, row1, row2, row3,
+        ));
+
+        if FLOP {
+            xvst1_u8_u16(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.0);
+            xvst1_u8_u16(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.1);
+            xvst1_u8_u16(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), v0.2);
+            xvst1_u8_u16(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), v0.3);
+        } else {
+            xvst1_u8_u16(dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr(), v0.0);
+            xvst1_u8_u16(dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr(), v0.1);
+            xvst1_u8_u16(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.2);
+            xvst1_u8_u16(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.3);
+        }
+    }
+}

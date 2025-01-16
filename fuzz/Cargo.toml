@@ -28,6 +28,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "cbcr8"
+path = "cbcr8/cbcr8.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "rgba8"
 path = "rgba8/rgba8.rs"
 test = false

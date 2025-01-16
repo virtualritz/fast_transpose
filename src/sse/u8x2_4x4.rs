@@ -27,54 +27,17 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+use crate::sse::u16_4x4::sse_transpose_u16_4x4_impl;
 #[cfg(target_arch = "x86")]
 use std::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
-#[inline(always)]
-pub(crate) unsafe fn sse_transpose_u16_4x4_impl<const FLIP: bool>(
-    v0: (__m128i, __m128i, __m128i, __m128i),
-) -> (__m128i, __m128i, __m128i, __m128i) {
-    // Unpack 16 bit elements. Goes from:
-    // in[0]: 00 01 02 03  XX XX XX XX
-    // in[1]: 10 11 12 13  XX XX XX XX
-    // in[2]: 20 21 22 23  XX XX XX XX
-    // in[3]: 30 31 32 33  XX XX XX XX
-    // to:
-    // a0:    00 10 01 11  02 12 03 13
-    // a1:    20 30 21 31  22 32 23 33
-    let a0 = _mm_unpacklo_epi16(v0.0, v0.1);
-    let a1 = _mm_unpacklo_epi16(v0.2, v0.3);
-
-    // Unpack 32 bit elements resulting in:
-    // out[0]: 00 10 20 30
-    // out[1]: 01 11 21 31
-    // out[2]: 02 12 22 32
-    // out[3]: 03 13 23 33
-    let o0 = _mm_unpacklo_epi32(a0, a1);
-    let o1 = _mm_srli_si128::<8>(o0);
-    let o2 = _mm_unpackhi_epi32(a0, a1);
-    let o3 = _mm_srli_si128::<8>(o2);
-
-    if FLIP {
-        let flipper = _mm_setr_epi8(6, 7, 4, 5, 2, 3, 0, 1, 6, 7, 4, 5, 2, 3, 0, 1);
-        (
-            _mm_shuffle_epi8(o0, flipper),
-            _mm_shuffle_epi8(o1, flipper),
-            _mm_shuffle_epi8(o2, flipper),
-            _mm_shuffle_epi8(o3, flipper),
-        )
-    } else {
-        (o0, o1, o2, o3)
-    }
-}
-
 #[inline]
-pub(crate) fn sse_transpose_4x4_u16<const FLOP: bool, const FLIP: bool>(
-    src: &[u16],
+pub(crate) fn sse_transpose_u8x2_4x4<const FLOP: bool, const FLIP: bool>(
+    src: &[u8],
     src_stride: usize,
-    dst: &mut [u16],
+    dst: &mut [u8],
     dst_stride: usize,
 ) {
     unsafe {

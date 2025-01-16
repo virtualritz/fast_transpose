@@ -39,6 +39,7 @@ mod avx;
     feature = "nightly_avx512"
 ))]
 mod avx512;
+mod cbcr8;
 mod flip;
 mod float_32;
 mod flop;
@@ -69,7 +70,6 @@ pub use flop::{
     flop_plane_f32_with_alpha, flop_plane_with_alpha, flop_rgb, flop_rgb16, flop_rgb_f32,
     flop_rgba, flop_rgba16, flop_rgba_f32,
 };
-pub use plane16::transpose_plane16_chunked;
 pub use rotate180::{
     rotate180_arbitrary, rotate180_plane, rotate180_plane16, rotate180_plane16_with_alpha,
     rotate180_plane_f32, rotate180_plane_f32_with_alpha, rotate180_plane_with_alpha, rotate180_rgb,

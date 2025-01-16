@@ -30,7 +30,9 @@
 use std::arch::aarch64::*;
 
 #[inline(always)]
-unsafe fn neon_transpose_u16_4x4_impl<const FLIP: bool>(v0: uint16x4x4_t) -> uint16x4x4_t {
+pub(crate) unsafe fn neon_transpose_u16_4x4_impl<const FLIP: bool>(
+    v0: uint16x4x4_t,
+) -> uint16x4x4_t {
     // Input:
     // 00 01 02 03
     // 10 11 12 13

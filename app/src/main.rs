@@ -28,8 +28,8 @@
  */
 use fast_transpose::{
     flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
-    transpose_plane, transpose_plane16, transpose_plane16_chunked, transpose_plane_f32,
-    transpose_rgb, transpose_rgba, FlipMode, FlopMode,
+    transpose_plane, transpose_plane16, transpose_plane_f32, transpose_rgb, transpose_rgba,
+    FlipMode, FlopMode,
 };
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
@@ -114,7 +114,7 @@ fn main() {
         *o3 = src[2] as u16;
     }
 
-    transpose_plane16_chunked(
+    transpose_plane16(
         &c1,
         dimensions.0 as usize,
         &mut c1_d,
@@ -126,7 +126,7 @@ fn main() {
     )
     .unwrap();
 
-    transpose_plane16_chunked(
+    transpose_plane16(
         &c2,
         dimensions.0 as usize,
         &mut c2_d,
@@ -138,7 +138,7 @@ fn main() {
     )
     .unwrap();
 
-    transpose_plane16_chunked(
+    transpose_plane16(
         &c3,
         dimensions.0 as usize,
         &mut c3_d,
