@@ -28,8 +28,8 @@
  */
 use fast_transpose::{
     flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
-    transpose_plane, transpose_plane16, transpose_plane_f32, transpose_rgb, transpose_rgba,
-    FlipMode, FlopMode,
+    transpose_plane, transpose_plane16, transpose_plane_f32, transpose_plane_with_alpha,
+    transpose_rgb, transpose_rgba, transpose_rgba16, FlipMode, FlopMode,
 };
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
@@ -64,7 +64,8 @@ fn main() {
     let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
     let mut transposed_rgb = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
 
-    let rgb_bytes = img.to_rgba8();
+    let rgba_bytes = img.to_rgba8();
+    let rgba16_bytes = img.to_rgba16();
 
     let rgb_set = img
         .as_bytes()
@@ -95,71 +96,19 @@ fn main() {
     // )
     // .unwrap();
 
-    let mut c1 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
-    let mut c2 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
-    let mut c3 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
+    let mut rgba16 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * 4];
 
-    let mut c1_d = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
-    let mut c2_d = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
-    let mut c3_d = vec![0u16; dimensions.0 as usize * dimensions.1 as usize];
-
-    for (((o1, o2), o3), src) in c1
-        .iter_mut()
-        .zip(c2.iter_mut())
-        .zip(c3.iter_mut())
-        .zip(img.to_rgb8().chunks_exact(3))
-    {
-        *o1 = src[0] as u16;
-        *o2 = src[1] as u16;
-        *o3 = src[2] as u16;
-    }
-
-    transpose_plane16(
-        &c1,
-        dimensions.0 as usize,
-        &mut c1_d,
-        dimensions.1 as usize,
+    transpose_rgba16(
+        &rgba16_bytes,
+        dimensions.0 as usize * 4,
+        &mut rgba16,
+        dimensions.1 as usize * 4,
         dimensions.0 as usize,
         dimensions.1 as usize,
-        FlipMode::Flip,
+        FlipMode::NoFlip,
         FlopMode::Flop,
     )
     .unwrap();
-
-    transpose_plane16(
-        &c2,
-        dimensions.0 as usize,
-        &mut c2_d,
-        dimensions.1 as usize,
-        dimensions.0 as usize,
-        dimensions.1 as usize,
-        FlipMode::Flip,
-        FlopMode::Flop,
-    )
-    .unwrap();
-
-    transpose_plane16(
-        &c3,
-        dimensions.0 as usize,
-        &mut c3_d,
-        dimensions.1 as usize,
-        dimensions.0 as usize,
-        dimensions.1 as usize,
-        FlipMode::Flip,
-        FlopMode::Flop,
-    )
-    .unwrap();
-
-    for (((o1, o2), o3), src) in c1_d
-        .iter()
-        .zip(c2_d.iter())
-        .zip(c3_d.iter())
-        .zip(transposed.chunks_exact_mut(3))
-    {
-        src[0] = *o1 as u8;
-        src[1] = *o2 as u8;
-        src[2] = *o3 as u8;
-    }
 
     // transpose_rgba(
     //     &rgb_bytes,
@@ -191,27 +140,38 @@ fn main() {
     // )
     // .unwrap();
 
-    if components == 3 {
-        image::save_buffer(
-            "transposed.jpg",
-            &transposed,
-            dimensions.1,
-            dimensions.0,
-            image::ExtendedColorType::Rgb8,
-        )
-        .unwrap();
-    } else {
-        image::save_buffer(
-            "transposed.png",
-            &transposed,
-            dimensions.1,
-            dimensions.0,
-            if components == 3 {
-                image::ExtendedColorType::Rgb8
-            } else {
-                image::ExtendedColorType::Rgba8
-            },
-        )
-        .unwrap();
-    }
+    // if components == 3 {
+    //     image::save_buffer(
+    //         "transposed.jpg",
+    //         &transposed,
+    //         dimensions.1,
+    //         dimensions.0,
+    //         image::ExtendedColorType::Rgb8,
+    //     )
+    //     .unwrap();
+    // } else {
+    //     image::save_buffer(
+    //         "transposed.png",
+    //         &transposed,
+    //         dimensions.1,
+    //         dimensions.0,
+    //         if components == 3 {
+    //             image::ExtendedColorType::Rgb8
+    //         } else {
+    //             image::ExtendedColorType::Rgba8
+    //         },
+    //     )
+    //     .unwrap();
+    // }
+
+    let rgb = rgba16.iter().map(|&x| (x >> 8) as u8).collect::<Vec<_>>();
+
+    image::save_buffer(
+        "transposed.png",
+        &rgb,
+        dimensions.1,
+        dimensions.0,
+        image::ExtendedColorType::Rgba8,
+    )
+    .unwrap();
 }

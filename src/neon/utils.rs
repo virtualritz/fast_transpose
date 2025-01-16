@@ -41,6 +41,11 @@ pub(crate) unsafe fn vrev128_u32(a: uint32x4_t) -> uint32x4_t {
 }
 
 #[inline(always)]
+pub(crate) unsafe fn vrev128q_u64(a: uint64x2_t) -> uint64x2_t {
+    vcombine_u64(vget_high_u64(a), vget_low_u64(a))
+}
+
+#[inline(always)]
 pub(crate) unsafe fn vrev128_u8(a: uint8x16_t) -> uint8x16_t {
     let rev = vrev64q_u8(a);
     vcombine_u8(vget_high_u8(rev), vget_low_u8(rev))
@@ -100,4 +105,14 @@ pub(crate) unsafe fn xvld1q_u8_u16(ptr: *const u8) -> uint16x8_t {
 #[inline(always)]
 pub(crate) unsafe fn xvst1q_u8_u16(ptr: *mut u8, a: uint16x8_t) {
     vst1q_u8(ptr, vreinterpretq_u8_u16(a))
+}
+
+#[inline(always)]
+pub(crate) unsafe fn xvld1q_u16_u64(ptr: *const u16) -> uint64x2_t {
+    vreinterpretq_u64_u16(vld1q_u16(ptr))
+}
+
+#[inline(always)]
+pub(crate) unsafe fn xvst1q_u16_u64(ptr: *mut u16, a: uint64x2_t) {
+    vst1q_u16(ptr, vreinterpretq_u16_u64(a))
 }

@@ -28,6 +28,8 @@
  */
 mod u16_4x4;
 mod u16_8x8;
+mod u16x4_2x2;
+mod u16x4_4x4;
 mod u8_16x16;
 mod u8_8x8;
 mod u8x2_4x4;
@@ -38,6 +40,8 @@ mod x8_u32;
 
 pub(crate) use u16_4x4::neon_transpose_4x4_u16;
 pub(crate) use u16_8x8::neon_transpose_8x8_u16;
+pub(crate) use u16x4_2x2::neon_transpose_u16x4_2x2;
+pub(crate) use u16x4_4x4::neon_transpose_u16x4_4x4;
 pub(crate) use u8_16x16::neon_transpose_u8_16x16;
 pub(crate) use u8_8x8::neon_transpose_u8_8x8;
 pub(crate) use u8x2_4x4::neon_transpose_u8x2_4x4;
