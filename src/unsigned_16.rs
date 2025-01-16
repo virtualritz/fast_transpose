@@ -29,6 +29,7 @@
 #![forbid(unsafe_code)]
 
 use crate::plane16::transpose_plane16_chunked;
+use crate::rgba16::transpose_rgba16_chunked;
 use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
 use crate::{FlipMode, FlopMode, TransposeError};
 
@@ -168,7 +169,7 @@ pub fn transpose_rgba16(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    transpose_arbitrary_grouped::<u16, 4>(
+    transpose_rgba16_chunked(
         input,
         input_stride,
         output,

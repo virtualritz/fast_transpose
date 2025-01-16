@@ -32,6 +32,8 @@
 #![cfg_attr(feature = "nightly_avx512", feature(avx512_target_feature))]
 #![cfg_attr(feature = "nightly_avx512", feature(stdarch_x86_avx512))]
 #![deny(unreachable_pub)]
+extern crate core;
+
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
 mod avx;
 #[cfg(all(
@@ -47,6 +49,7 @@ mod flop;
 mod neon;
 mod plane16;
 mod plane8;
+mod rgba16;
 mod rgba8;
 mod rotate180;
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]

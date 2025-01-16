@@ -10,6 +10,9 @@ transpose = "0.2.3"
 bytemuck = "1.19.0"
 yuv-sys = "0.3.7"
 
+[features]
+nightly_avx512 = ["fast_transpose/nightly_avx512"]
+
 [dev-dependencies]
 criterion = "0.5.1"
 

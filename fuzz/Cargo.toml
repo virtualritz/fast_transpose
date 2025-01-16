@@ -40,3 +40,10 @@ path = "rgba8/rgba8.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rgba16"
+path = "rgba16/rgba16.rs"
+test = false
+doc = false
+bench = false

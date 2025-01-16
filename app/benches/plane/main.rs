@@ -29,11 +29,10 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use fast_transpose::{
-    flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane16_chunked,
-    transpose_plane_f32, FlipMode, FlopMode,
+    flip_plane, rotate180_plane, transpose_plane, transpose_plane16, transpose_plane_f32, FlipMode,
+    FlopMode,
 };
 use image::{DynamicImage, ImageReader};
-use yuv_sys::RotationMode_kRotate90;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let img = ImageReader::open("../assets/bench.jpg")

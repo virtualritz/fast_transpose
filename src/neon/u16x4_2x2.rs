@@ -26,8 +26,43 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod u16x4_4x4;
-mod x8_u32;
 
-pub(crate) use u16x4_4x4::avx2_transpose_u16x4_4x4;
-pub(crate) use x8_u32::avx_transpose_8x8_u32;
+use crate::neon::utils::{vrev128q_u64, xvld1q_u16_u64, xvst1q_u16_u64};
+use std::arch::aarch64::*;
+
+#[inline(always)]
+pub(crate) unsafe fn neon_transpose_u64_2x2_impl<const FLIP: bool>(
+    v0: uint64x2x2_t,
+) -> uint64x2x2_t {
+    let l = vtrn1q_u64(v0.0, v0.1);
+    let h = vtrn2q_u64(v0.0, v0.1);
+
+    if FLIP {
+        uint64x2x2_t(vrev128q_u64(l), vrev128q_u64(h))
+    } else {
+        uint64x2x2_t(l, h)
+    }
+}
+
+#[inline]
+pub(crate) fn neon_transpose_u16x4_2x2<const FLOP: bool, const FLIP: bool>(
+    src: &[u16],
+    src_stride: usize,
+    dst: &mut [u16],
+    dst_stride: usize,
+) {
+    unsafe {
+        let row0 = xvld1q_u16_u64(src.get_unchecked(0..).as_ptr());
+        let row1 = xvld1q_u16_u64(src.get_unchecked(src_stride..).as_ptr());
+
+        let v0 = neon_transpose_u64_2x2_impl::<FLIP>(uint64x2x2_t(row0, row1));
+
+        if FLOP {
+            xvst1q_u16_u64(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.0);
+            xvst1q_u16_u64(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.1);
+        } else {
+            xvst1q_u16_u64(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.0);
+            xvst1q_u16_u64(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.1);
+        }
+    }
+}

@@ -43,7 +43,7 @@ impl Display for TransposeError {
                 f.write_str("Source and target dimensions must match")
             }
             TransposeError::InvalidArraySize => {
-                f.write_str("Vector size must match provided width and height ")
+                f.write_str("Vector size must match provided width and height")
             }
         }
     }
