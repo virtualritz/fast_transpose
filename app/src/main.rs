@@ -51,7 +51,7 @@ fn main() {
     }
     println!("{:?}", arr);
 
-    let img = DynamicImage::ImageRgb8(img.to_rgb8());
+    let img = DynamicImage::ImageRgba8(img.to_rgba8());
 
     let dimensions = img.dimensions();
     let components = if img.color() == ColorType::Rgb8 { 3 } else { 4 };
@@ -65,7 +65,6 @@ fn main() {
     let mut transposed_rgb = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
 
     let rgba_bytes = img.to_rgba8();
-    let rgba16_bytes = img.to_rgba16();
 
     let rgb_set = img
         .as_bytes()
@@ -96,12 +95,10 @@ fn main() {
     // )
     // .unwrap();
 
-    let mut rgba16 = vec![0u16; dimensions.0 as usize * dimensions.1 as usize * 4];
-
-    transpose_rgba16(
-        &rgba16_bytes,
+    transpose_rgba(
+        &rgba_bytes,
         dimensions.0 as usize * 4,
-        &mut rgba16,
+        &mut transposed,
         dimensions.1 as usize * 4,
         dimensions.0 as usize,
         dimensions.1 as usize,
@@ -140,38 +137,27 @@ fn main() {
     // )
     // .unwrap();
 
-    // if components == 3 {
-    //     image::save_buffer(
-    //         "transposed.jpg",
-    //         &transposed,
-    //         dimensions.1,
-    //         dimensions.0,
-    //         image::ExtendedColorType::Rgb8,
-    //     )
-    //     .unwrap();
-    // } else {
-    //     image::save_buffer(
-    //         "transposed.png",
-    //         &transposed,
-    //         dimensions.1,
-    //         dimensions.0,
-    //         if components == 3 {
-    //             image::ExtendedColorType::Rgb8
-    //         } else {
-    //             image::ExtendedColorType::Rgba8
-    //         },
-    //     )
-    //     .unwrap();
-    // }
-
-    let rgb = rgba16.iter().map(|&x| (x >> 8) as u8).collect::<Vec<_>>();
-
-    image::save_buffer(
-        "transposed.png",
-        &rgb,
-        dimensions.1,
-        dimensions.0,
-        image::ExtendedColorType::Rgba8,
-    )
-    .unwrap();
+    if components == 3 {
+        image::save_buffer(
+            "transposed.jpg",
+            &transposed,
+            dimensions.1,
+            dimensions.0,
+            image::ExtendedColorType::Rgb8,
+        )
+        .unwrap();
+    } else {
+        image::save_buffer(
+            "transposed.png",
+            &transposed,
+            dimensions.1,
+            dimensions.0,
+            if components == 3 {
+                image::ExtendedColorType::Rgb8
+            } else {
+                image::ExtendedColorType::Rgba8
+            },
+        )
+        .unwrap();
+    }
 }
