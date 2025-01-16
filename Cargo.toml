@@ -14,6 +14,7 @@ categories = ["multimedia::images", "algorithms"]
 homepage = "https://github.com/awxkee/fast_transpose"
 repository = "https://github.com/awxkee/fast_transpose"
 exclude = ["*.jpg", "assets/*"]
+rust-version = "1.82.0"
 
 [dependencies]
 bytemuck = "1.19.0"
