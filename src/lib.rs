@@ -28,9 +28,27 @@
  */
 #![allow(clippy::too_many_arguments)]
 #![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
-#![cfg_attr(feature = "nightly_avx512", feature(cfg_version))]
-#![cfg_attr(feature = "nightly_avx512", feature(avx512_target_feature))]
-#![cfg_attr(feature = "nightly_avx512", feature(stdarch_x86_avx512))]
+#![cfg_attr(
+    all(
+        feature = "nightly_avx512",
+        any(target_arch = "x86", target_arch = "x86_64")
+    ),
+    feature(cfg_version)
+)]
+#![cfg_attr(
+    all(
+        feature = "nightly_avx512",
+        any(target_arch = "x86", target_arch = "x86_64")
+    ),
+    feature(avx512_target_feature)
+)]
+#![cfg_attr(
+    all(
+        feature = "nightly_avx512",
+        any(target_arch = "x86", target_arch = "x86_64")
+    ),
+    feature(stdarch_x86_avx512)
+)]
 #![deny(unreachable_pub)]
 extern crate core;
 
