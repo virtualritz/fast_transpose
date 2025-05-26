@@ -32,9 +32,12 @@
 use fast_transpose::{transpose_plane, FlipMode, FlopMode};
 use libfuzzer_sys::fuzz_target;
 
-fuzz_target!(|data: (u8, u8)| {
+fuzz_target!(|data: (u16, u16)| {
     let width = data.0 as usize;
     let height = data.1 as usize;
+    if width > 512 || height > 512 {
+        return;
+    }
     if width == 0 || height == 0 {
         return;
     }

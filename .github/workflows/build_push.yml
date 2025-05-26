@@ -7,8 +7,10 @@ concurrency:
 on:
   push:
     branches:
-      - '*'
+      - 'master'
+      - 'main'
       - '!ci_test_*'
+      - 'ci_testing'
     tags-ignore:
       - '*'
   pull_request:
@@ -56,17 +58,32 @@ jobs:
       - run: cargo clippy -- -D warnings
 
   fuzz:
-    name: Fuzzing
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
+    name: Fuzzing ARM
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo install cargo-fuzz
-      - run: cargo fuzz run plane8 -- -max_total_time=15
-      - run: cargo fuzz run cbcr8 -- -max_total_time=15
-      - run: cargo fuzz run rgba8 -- -max_total_time=15
-      - run: cargo fuzz run rgba16 -- -max_total_time=15
-      - run: cargo fuzz run plane16 -- -max_total_time=15
+      - run: cargo fuzz run plane8 --no-default-features --features neon -- -max_total_time=15
+      - run: cargo fuzz run cbcr8 --no-default-features --features neon -- -max_total_time=15
+      - run: cargo fuzz run rgba8 --no-default-features --features neon -- -max_total_time=15
+      - run: cargo fuzz run rgba16 --no-default-features --features neon -- -max_total_time=15
+      - run: cargo fuzz run plane16 --no-default-features --features neon -- -max_total_time=15
+      - run: cargo fuzz run plane_f32 --no-default-features --features neon -- -max_total_time=15
+
+  fuzz_x86:
+    name: Fuzzing x86
+    strategy:
+      matrix:
+        feature: [ sse, avx ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz
+      - run: cargo fuzz run plane8 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
+      - run: cargo fuzz run cbcr8 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
+      - run: cargo fuzz run rgba8 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
+      - run: cargo fuzz run rgba16 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
+      - run: cargo fuzz run plane16 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
+      - run: cargo fuzz run plane_f32 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15

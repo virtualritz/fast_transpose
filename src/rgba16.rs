@@ -26,17 +26,14 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#[cfg(any(
-    all(target_arch = "aarch64", feature = "unsafe"),
-    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-))]
-use crate::rgba8::{transpose_executor, transpose_section, TransposeBlock};
+#[allow(unused_imports)]
+use crate::rgba8::*;
 use crate::{FlipMode, FlopMode, TransposeError};
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 struct TransposeBlockNeon2x2<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16> for TransposeBlockNeon2x2<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u16], src_stride: usize, dst: &mut [u16], dst_stride: usize) {
@@ -45,10 +42,10 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16> for TransposeBlockN
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 struct TransposeBlockNeon4x4<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16> for TransposeBlockNeon4x4<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u16], src_stride: usize, dst: &mut [u16], dst_stride: usize) {
@@ -57,10 +54,18 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16> for TransposeBlockN
     }
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 struct TransposeBlockSSSE3_2x2<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16>
     for TransposeBlockSSSE3_2x2<FLOP, FLIP>
 {
@@ -71,10 +76,10 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16>
     }
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 struct TransposeBlockAvx2_4x4<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16>
     for TransposeBlockAvx2_4x4<FLOP, FLIP>
 {
@@ -85,7 +90,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16>
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 fn transpose_rgba16_impl_neon<const FLOP: bool, const FLIP: bool>(
     input: &[u16],
     input_stride: usize,
@@ -131,7 +136,11 @@ fn transpose_rgba16_impl_neon<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 #[target_feature(enable = "ssse3")]
 unsafe fn transpose_rgba16_impl_ssse3<const FLOP: bool, const FLIP: bool>(
     input: &[u16],
@@ -167,7 +176,7 @@ unsafe fn transpose_rgba16_impl_ssse3<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 #[target_feature(enable = "avx2")]
 unsafe fn transpose_rgba16_impl_avx2<const FLOP: bool, const FLIP: bool>(
     input: &[u16],
@@ -237,10 +246,61 @@ pub(crate) fn transpose_rgba16_chunked(
         return Err(TransposeError::MismatchDimensions);
     }
 
-    #[cfg(not(any(
-        all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-        all(target_arch = "aarch64", feature = "unsafe")
-    )))]
+    #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
+    {
+        let executor = match flip_mode {
+            FlipMode::NoFlip => match flop_mode {
+                FlopMode::NoFlop => transpose_rgba16_impl_neon::<false, false>,
+                FlopMode::Flop => transpose_rgba16_impl_neon::<true, false>,
+            },
+            FlipMode::Flip => match flop_mode {
+                FlopMode::NoFlop => transpose_rgba16_impl_neon::<false, true>,
+                FlopMode::Flop => transpose_rgba16_impl_neon::<true, true>,
+            },
+        };
+        executor(input, input_stride, output, output_stride, width, height);
+        Ok(())
+    }
+    #[cfg(all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        feature = "unsafe",
+        any(feature = "sse", feature = "avx")
+    ))]
+    {
+        #[cfg(all(target_arch = "x86_64", feature = "avx"))]
+        if std::arch::is_x86_feature_detected!("avx2") {
+            let executor = match flip_mode {
+                FlipMode::NoFlip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba16_impl_avx2::<false, false>,
+                    FlopMode::Flop => transpose_rgba16_impl_avx2::<true, false>,
+                },
+                FlipMode::Flip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba16_impl_avx2::<false, true>,
+                    FlopMode::Flop => transpose_rgba16_impl_avx2::<true, true>,
+                },
+            };
+
+            unsafe { executor(input, input_stride, output, output_stride, width, height) }
+            return Ok(());
+        }
+
+        if std::arch::is_x86_feature_detected!("ssse3") {
+            let executor: unsafe fn(&[u16], usize, &mut [u16], usize, usize, usize) =
+                match flip_mode {
+                    FlipMode::NoFlip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba16_impl_ssse3::<false, false>,
+                        FlopMode::Flop => transpose_rgba16_impl_ssse3::<true, false>,
+                    },
+                    FlipMode::Flip => match flop_mode {
+                        FlopMode::NoFlop => transpose_rgba16_impl_ssse3::<false, true>,
+                        FlopMode::Flop => transpose_rgba16_impl_ssse3::<true, true>,
+                    },
+                };
+            unsafe { executor(input, input_stride, output, output_stride, width, height) }
+            return Ok(());
+        }
+    }
+    #[cfg(not(all(target_arch = "aarch64", feature = "unsafe", feature = "neon")))]
     {
         use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
         transpose_arbitrary_grouped::<u16, 4>(
@@ -252,70 +312,6 @@ pub(crate) fn transpose_rgba16_chunked(
             height,
             flip_mode,
             flop_mode,
-        )?;
+        )
     }
-    #[cfg(any(
-        all(target_arch = "aarch64", feature = "unsafe"),
-        all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-    ))]
-    {
-        #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-        {
-            let executor = match flip_mode {
-                FlipMode::NoFlip => match flop_mode {
-                    FlopMode::NoFlop => transpose_rgba16_impl_neon::<false, false>,
-                    FlopMode::Flop => transpose_rgba16_impl_neon::<true, false>,
-                },
-                FlipMode::Flip => match flop_mode {
-                    FlopMode::NoFlop => transpose_rgba16_impl_neon::<false, true>,
-                    FlopMode::Flop => transpose_rgba16_impl_neon::<true, true>,
-                },
-            };
-            executor(input, input_stride, output, output_stride, width, height);
-        }
-        #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-        {
-            if !std::arch::is_x86_feature_detected!("ssse3") {
-                use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
-                return transpose_arbitrary_grouped::<u16, 4>(
-                    input,
-                    input_stride,
-                    output,
-                    output_stride,
-                    width,
-                    height,
-                    flip_mode,
-                    flop_mode,
-                );
-            }
-
-            let mut executor: unsafe fn(&[u16], usize, &mut [u16], usize, usize, usize) =
-                match flip_mode {
-                    FlipMode::NoFlip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba16_impl_ssse3::<false, false>,
-                        FlopMode::Flop => transpose_rgba16_impl_ssse3::<true, false>,
-                    },
-                    FlipMode::Flip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba16_impl_ssse3::<false, true>,
-                        FlopMode::Flop => transpose_rgba16_impl_ssse3::<true, true>,
-                    },
-                };
-
-            if std::arch::is_x86_feature_detected!("avx2") {
-                executor = match flip_mode {
-                    FlipMode::NoFlip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba16_impl_avx2::<false, false>,
-                        FlopMode::Flop => transpose_rgba16_impl_avx2::<true, false>,
-                    },
-                    FlipMode::Flip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba16_impl_avx2::<false, true>,
-                        FlopMode::Flop => transpose_rgba16_impl_avx2::<true, true>,
-                    },
-                };
-            }
-
-            unsafe { executor(input, input_stride, output, output_stride, width, height) }
-        }
-    }
-    Ok(())
 }

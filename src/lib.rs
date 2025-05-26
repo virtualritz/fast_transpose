@@ -28,6 +28,7 @@
  */
 #![allow(clippy::too_many_arguments)]
 #![cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
+#![allow(stable_features)]
 #![cfg_attr(
     all(
         feature = "nightly_avx512",
@@ -52,25 +53,27 @@
 #![deny(unreachable_pub)]
 extern crate core;
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 mod avx;
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "nightly_avx512"
-))]
+#[cfg(all(target_arch = "x86_64", feature = "nightly_avx512"))]
 mod avx512;
 mod cbcr8;
 mod flip;
+mod float32_invoker;
 mod float_32;
 mod flop;
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 mod neon;
 mod plane16;
 mod plane8;
 mod rgba16;
 mod rgba8;
 mod rotate180;
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 mod sse;
 mod transpose_arbitrary;
 mod transpose_arbitrary_group;

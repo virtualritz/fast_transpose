@@ -13,6 +13,12 @@ libfuzzer-sys = "0.4"
 [dependencies.fast_transpose]
 path = ".."
 
+[features]
+neon = ["fast_transpose/neon"]
+avx = ["fast_transpose/avx"]
+sse = ["fast_transpose/sse"]
+avx512 = ["fast_transpose/nightly_avx512"]
+
 [[bin]]
 name = "plane16"
 path = "plane16/plane16.rs"
@@ -44,6 +50,13 @@ bench = false
 [[bin]]
 name = "rgba16"
 path = "rgba16/rgba16.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "plane_f32"
+path = "plane_f32/plane_f32.rs"
 test = false
 doc = false
 bench = false

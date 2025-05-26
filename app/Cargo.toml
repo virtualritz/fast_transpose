@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 image = { version = "0.25.5" }
-fast_transpose = { path = "..", default-features = true, features = [] }
+fast_transpose = { path = "..", default-features = false, features = ["unsafe", "avx", "neon"] }
 transpose = "0.2.3"
 bytemuck = "1.19.0"
 yuv-sys = "0.3.7"
@@ -14,7 +14,7 @@ yuv-sys = "0.3.7"
 nightly_avx512 = ["fast_transpose/nightly_avx512"]
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.6.0"
 
 [[bench]]
 name = "plane"

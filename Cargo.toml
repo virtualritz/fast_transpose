@@ -2,7 +2,7 @@ workspace = { members = ["app", "fuzz"] }
 
 [package]
 name = "fast_transpose"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "Fast image and matrix transpose"
 readme = "README.md"
@@ -20,9 +20,12 @@ rust-version = "1.82.0"
 bytemuck = "1.19.0"
 
 [features]
-default = ["unsafe"]
+default = ["unsafe", "sse", "avx", "neon"]
 unsafe = []
-nightly_avx512 = ["unsafe"]
+neon = ["unsafe"]
+sse = ["unsafe"]
+avx = ["unsafe", "sse"]
+nightly_avx512 = ["unsafe", "avx"]
 
 [profile.dev.package]
 miniz_oxide.opt-level = 3

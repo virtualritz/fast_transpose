@@ -41,6 +41,12 @@ pub(crate) unsafe fn vrev128_u32(a: uint32x4_t) -> uint32x4_t {
 }
 
 #[inline(always)]
+pub(crate) unsafe fn vrev128_f32(a: float32x4_t) -> float32x4_t {
+    let rev = vrev64q_f32(a);
+    vcombine_f32(vget_high_f32(rev), vget_low_f32(rev))
+}
+
+#[inline(always)]
 pub(crate) unsafe fn vrev128q_u64(a: uint64x2_t) -> uint64x2_t {
     vcombine_u64(vget_high_u64(a), vget_low_u64(a))
 }
@@ -75,6 +81,19 @@ pub(crate) unsafe fn vtrnq_s64_to_u32(a0: uint32x4_t, a1: uint32x4_t) -> uint32x
         vreinterpretq_u64_u32(a1),
     ));
     uint32x4x2_t(b0, b1)
+}
+
+#[inline(always)]
+pub(crate) unsafe fn vtrnq_f64_to_f32(a0: float32x4_t, a1: float32x4_t) -> float32x4x2_t {
+    let b0 = vreinterpretq_f32_f64(vtrn1q_f64(
+        vreinterpretq_f64_f32(a0),
+        vreinterpretq_f64_f32(a1),
+    ));
+    let b1 = vreinterpretq_f32_f64(vtrn2q_f64(
+        vreinterpretq_f64_f32(a0),
+        vreinterpretq_f64_f32(a1),
+    ));
+    float32x4x2_t(b0, b1)
 }
 
 #[inline(always)]

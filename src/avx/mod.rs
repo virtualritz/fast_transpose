@@ -27,7 +27,9 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 mod u16x4_4x4;
+mod x8_f32;
 mod x8_u32;
 
 pub(crate) use u16x4_4x4::avx2_transpose_u16x4_4x4;
+pub(crate) use x8_f32::avx_transpose_8x8_f32;
 pub(crate) use x8_u32::avx_transpose_8x8_u32;

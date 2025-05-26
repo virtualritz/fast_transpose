@@ -28,18 +28,12 @@
  */
 use crate::{FlipMode, FlopMode, TransposeError};
 
-#[cfg(any(
-    all(target_arch = "aarch64", feature = "unsafe"),
-    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-))]
+#[allow(dead_code)]
 pub(crate) trait TransposeBlock<V> {
     fn transpose_block(&self, src: &[V], src_stride: usize, dst: &mut [V], dst_stride: usize);
 }
 
-#[cfg(any(
-    all(target_arch = "aarch64", feature = "unsafe"),
-    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-))]
+#[allow(dead_code)]
 pub(crate) fn transpose_section<V: Copy, const CN: usize, const FLOP: bool, const FLIP: bool>(
     input: &[V],
     input_stride: usize,
@@ -77,10 +71,10 @@ pub(crate) fn transpose_section<V: Copy, const CN: usize, const FLOP: bool, cons
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 struct TransposeBlockNeon4x4<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockNeon4x4<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
@@ -89,10 +83,10 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockNe
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 struct TransposeBlockNeon8x8<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockNeon8x8<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
@@ -101,10 +95,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockNe
     }
 }
 
-#[cfg(any(
-    all(target_arch = "aarch64", feature = "unsafe"),
-    all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-))]
+#[allow(dead_code)]
 #[inline(always)]
 pub(crate) fn transpose_executor<
     V: Copy + Default,
@@ -150,9 +141,7 @@ pub(crate) fn transpose_executor<
                 let rem_x = width - x;
                 assert!(
                     rem_x <= BLOCK_SIZE,
-                    "Remainder is expected to be less than {}, but got {}",
-                    BLOCK_SIZE,
-                    rem_x,
+                    "Remainder is expected to be less than {BLOCK_SIZE}, but got {rem_x}"
                 );
 
                 let output_x = if FLOP { x } else { 0 };
@@ -205,10 +194,18 @@ pub(crate) fn transpose_executor<
     y
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 struct TransposeBlockSSSE34x4<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockSSSE34x4<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
@@ -217,10 +214,18 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockSS
     }
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 struct TransposeBlockSSSE38x8<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockSSSE38x8<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
@@ -229,28 +234,22 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockSS
     }
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 struct TransposeBlockAvx2_8x8<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8> for TransposeBlockAvx2_8x8<FLOP, FLIP> {
     #[inline(always)]
     fn transpose_block(&self, src: &[u8], src_stride: usize, dst: &mut [u8], dst_stride: usize) {
         use crate::avx::avx_transpose_8x8_u32;
-        avx_transpose_8x8_u32::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+        unsafe { avx_transpose_8x8_u32::<FLOP, FLIP>(src, src_stride, dst, dst_stride) }
     }
 }
 
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "nightly_avx512"
-))]
+#[cfg(all(target_arch = "x86_64", feature = "nightly_avx512"))]
 struct TransposeBlockAvx512_16x16<const FLOP: bool, const FLIP: bool> {}
 
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "nightly_avx512"
-))]
+#[cfg(all(target_arch = "x86_64", feature = "nightly_avx512"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8>
     for TransposeBlockAvx512_16x16<FLOP, FLIP>
 {
@@ -261,7 +260,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u8>
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 fn transpose_rgba8_impl_neon<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
     input_stride: usize,
@@ -307,7 +306,11 @@ fn transpose_rgba8_impl_neon<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
 #[target_feature(enable = "ssse3")]
 unsafe fn transpose_rgba8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
@@ -354,7 +357,7 @@ unsafe fn transpose_rgba8_impl_ssse3<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
 #[target_feature(enable = "avx2")]
 unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
@@ -401,10 +404,7 @@ unsafe fn transpose_rgba8_impl_avx2<const FLOP: bool, const FLIP: bool>(
     )
 }
 
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "nightly_avx512"
-))]
+#[cfg(all(target_arch = "x86_64", feature = "nightly_avx512"))]
 #[target_feature(enable = "avx512bw")]
 unsafe fn transpose_rgba8_impl_avx512<const FLOP: bool, const FLIP: bool>(
     input: &[u8],
@@ -485,10 +485,78 @@ pub(crate) fn transpose_rgba8_chunked(
         return Err(TransposeError::MismatchDimensions);
     }
 
-    #[cfg(not(any(
-        all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-        all(target_arch = "aarch64", feature = "unsafe")
-    )))]
+    #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
+    {
+        let executor = match flip_mode {
+            FlipMode::NoFlip => match flop_mode {
+                FlopMode::NoFlop => transpose_rgba8_impl_neon::<false, false>,
+                FlopMode::Flop => transpose_rgba8_impl_neon::<true, false>,
+            },
+            FlipMode::Flip => match flop_mode {
+                FlopMode::NoFlop => transpose_rgba8_impl_neon::<false, true>,
+                FlopMode::Flop => transpose_rgba8_impl_neon::<true, true>,
+            },
+        };
+        executor(input, input_stride, output, output_stride, width, height);
+        Ok(())
+    }
+    #[cfg(all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        feature = "unsafe",
+        any(feature = "sse", feature = "avx")
+    ))]
+    {
+        #[cfg(all(feature = "nightly_avx512", target_arch = "x86_64"))]
+        if std::arch::is_x86_feature_detected!("avx512bw") {
+            let executor = match flip_mode {
+                FlipMode::NoFlip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
+                    FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
+                },
+                FlipMode::Flip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
+                    FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
+                },
+            };
+
+            unsafe { executor(input, input_stride, output, output_stride, width, height) }
+            return Ok(());
+        }
+
+        #[cfg(all(target_arch = "x86_64", feature = "avx"))]
+        if std::arch::is_x86_feature_detected!("avx2") {
+            let executor = match flip_mode {
+                FlipMode::NoFlip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, false>,
+                    FlopMode::Flop => transpose_rgba8_impl_avx2::<true, false>,
+                },
+                FlipMode::Flip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, true>,
+                    FlopMode::Flop => transpose_rgba8_impl_avx2::<true, true>,
+                },
+            };
+
+            unsafe { executor(input, input_stride, output, output_stride, width, height) }
+            return Ok(());
+        }
+
+        if std::arch::is_x86_feature_detected!("ssse3") {
+            let executor: unsafe fn(&[u8], usize, &mut [u8], usize, usize, usize) = match flip_mode
+            {
+                FlipMode::NoFlip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba8_impl_ssse3::<false, false>,
+                    FlopMode::Flop => transpose_rgba8_impl_ssse3::<true, false>,
+                },
+                FlipMode::Flip => match flop_mode {
+                    FlopMode::NoFlop => transpose_rgba8_impl_ssse3::<false, true>,
+                    FlopMode::Flop => transpose_rgba8_impl_ssse3::<true, true>,
+                },
+            };
+            unsafe { executor(input, input_stride, output, output_stride, width, height) }
+            return Ok(());
+        }
+    }
+    #[cfg(not(all(target_arch = "aarch64", feature = "unsafe", feature = "neon")))]
     {
         use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
         transpose_arbitrary_grouped::<u8, 4>(
@@ -500,84 +568,6 @@ pub(crate) fn transpose_rgba8_chunked(
             height,
             flip_mode,
             flop_mode,
-        )?;
+        )
     }
-    #[cfg(any(
-        all(target_arch = "aarch64", feature = "unsafe"),
-        all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"),
-    ))]
-    {
-        #[cfg(all(target_arch = "aarch64", feature = "unsafe"))]
-        {
-            let executor = match flip_mode {
-                FlipMode::NoFlip => match flop_mode {
-                    FlopMode::NoFlop => transpose_rgba8_impl_neon::<false, false>,
-                    FlopMode::Flop => transpose_rgba8_impl_neon::<true, false>,
-                },
-                FlipMode::Flip => match flop_mode {
-                    FlopMode::NoFlop => transpose_rgba8_impl_neon::<false, true>,
-                    FlopMode::Flop => transpose_rgba8_impl_neon::<true, true>,
-                },
-            };
-            executor(input, input_stride, output, output_stride, width, height);
-        }
-        #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "unsafe"))]
-        {
-            if !std::arch::is_x86_feature_detected!("ssse3") {
-                use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
-                return transpose_arbitrary_grouped::<u8, 4>(
-                    input,
-                    input_stride,
-                    output,
-                    output_stride,
-                    width,
-                    height,
-                    flip_mode,
-                    flop_mode,
-                );
-            }
-
-            let mut executor: unsafe fn(&[u8], usize, &mut [u8], usize, usize, usize) =
-                match flip_mode {
-                    FlipMode::NoFlip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_impl_ssse3::<false, false>,
-                        FlopMode::Flop => transpose_rgba8_impl_ssse3::<true, false>,
-                    },
-                    FlipMode::Flip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_impl_ssse3::<false, true>,
-                        FlopMode::Flop => transpose_rgba8_impl_ssse3::<true, true>,
-                    },
-                };
-
-            if std::arch::is_x86_feature_detected!("avx2") {
-                executor = match flip_mode {
-                    FlipMode::NoFlip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, false>,
-                        FlopMode::Flop => transpose_rgba8_impl_avx2::<true, false>,
-                    },
-                    FlipMode::Flip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_impl_avx2::<false, true>,
-                        FlopMode::Flop => transpose_rgba8_impl_avx2::<true, true>,
-                    },
-                };
-            }
-
-            #[cfg(feature = "nightly_avx512")]
-            if std::arch::is_x86_feature_detected!("avx512bw") {
-                executor = match flip_mode {
-                    FlipMode::NoFlip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, false>,
-                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, false>,
-                    },
-                    FlipMode::Flip => match flop_mode {
-                        FlopMode::NoFlop => transpose_rgba8_impl_avx512::<false, true>,
-                        FlopMode::Flop => transpose_rgba8_impl_avx512::<true, true>,
-                    },
-                };
-            }
-
-            unsafe { executor(input, input_stride, output, output_stride, width, height) }
-        }
-    }
-    Ok(())
 }
