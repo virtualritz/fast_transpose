@@ -27,9 +27,6 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#[cfg(target_arch = "x86")]
-use std::arch::x86::*;
-#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
 #[inline(always)]
@@ -41,39 +38,6 @@ unsafe fn avx_transpose_8x8_impl<const FLIP: bool>(
     (__m256i, __m256i, __m256i, __m256i),
     (__m256i, __m256i, __m256i, __m256i),
 ) {
-    // let t0 = _mm256_unpacklo_epi32(_mm256_castsi256_ps(v0.0), _mm256_castsi256_ps(v0.1));
-    // let t1 = _mm256_unpackhi_epi32(_mm256_castsi256_ps(v0.0), _mm256_castsi256_ps(v0.1));
-    // let t2 = _mm256_unpacklo_epi32(_mm256_castsi256_ps(v0.2), _mm256_castsi256_ps(v0.3));
-    // let t3 = _mm256_unpackhi_epi32(_mm256_castsi256_ps(v0.2), _mm256_castsi256_ps(v0.3));
-    // let t4 = _mm256_unpacklo_epi32(_mm256_castsi256_ps(v1.0), _mm256_castsi256_ps(v1.1));
-    // let t5 = _mm256_unpackhi_epi32(_mm256_castsi256_ps(v1.0), _mm256_castsi256_ps(v1.1));
-    // let t6 = _mm256_unpacklo_epi32(_mm256_castsi256_ps(v1.2), _mm256_castsi256_ps(v1.3));
-    // let t7 = _mm256_unpackhi_epi32(_mm256_castsi256_ps(v1.2), _mm256_castsi256_ps(v1.3));
-    // const FLAG_1: i32 = _mm_shuffle(1, 0, 1, 0);
-    // let tt0 = _mm256_shuffle_ps::<FLAG_1>(t0, t2);
-    // const FLAG_2: i32 = _mm_shuffle(3, 2, 3, 2);
-    // let tt1 = _mm256_shuffle_ps::<FLAG_2>(t0, t2);
-    // const FLAG_3: i32 = _mm_shuffle(1, 0, 1, 0);
-    // let tt2 = _mm256_shuffle_ps::<FLAG_3>(t1, t3);
-    // const FLAG_4: i32 = _mm_shuffle(3, 2, 3, 2);
-    // let tt3 = _mm256_shuffle_ps::<FLAG_4>(t1, t3);
-    // const FLAG_5: i32 = _mm_shuffle(1, 0, 1, 0);
-    // let tt4 = _mm256_shuffle_ps::<FLAG_5>(t4, t6);
-    // const FLAG_6: i32 = _mm_shuffle(3, 2, 3, 2);
-    // let tt5 = _mm256_shuffle_ps::<FLAG_6>(t4, t6);
-    // const FLAG_7: i32 = _mm_shuffle(1, 0, 1, 0);
-    // let tt6 = _mm256_shuffle_ps::<FLAG_7>(t5, t7);
-    // const FLAG_8: i32 = _mm_shuffle(3, 2, 3, 2);
-    // let tt7 = _mm256_shuffle_ps::<FLAG_8>(t5, t7);
-    // let r0 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt0, tt4));
-    // let r1 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt1, tt5));
-    // let r2 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt2, tt6));
-    // let r3 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x20>(tt3, tt7));
-    // let r4 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x31>(tt0, tt4));
-    // let r5 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x31>(tt1, tt5));
-    // let r6 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x31>(tt2, tt6));
-    // let r7 = _mm256_castps_si256(_mm256_permute2f128_ps::<0x31>(tt3, tt7));
-
     let t0 = _mm256_unpacklo_epi32(v0.0, v0.1);
     let t1 = _mm256_unpackhi_epi32(v0.0, v0.1);
     let t2 = _mm256_unpacklo_epi32(v0.2, v0.3);
@@ -120,7 +84,8 @@ unsafe fn avx_transpose_8x8_impl<const FLIP: bool>(
     }
 }
 
-#[inline(always)]
+#[inline]
+#[target_feature(enable = "avx2")]
 pub(crate) fn avx_transpose_8x8_u32<const FLOP: bool, const FLIP: bool>(
     src: &[u8],
     src_stride: usize,

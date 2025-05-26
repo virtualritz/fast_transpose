@@ -27,94 +27,98 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-use crate::sse::_mm_shuffle;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
 
 #[inline(always)]
-pub(crate) unsafe fn avx_transpose_u64_4x4_impl<const FLIP: bool>(
-    v0: (__m256i, __m256i, __m256i, __m256i),
-) -> (__m256i, __m256i, __m256i, __m256i) {
+pub(crate) unsafe fn sse_transpose_4x4_impl_f32<const FLIP: bool>(
+    v0: (__m128, __m128, __m128, __m128),
+) -> (__m128, __m128, __m128, __m128) {
     // Unpack 32 bit elements. Goes from:
     // in[0]: 00 01 02 03
     // in[1]: 10 11 12 13
     // in[2]: 20 21 22 23
     // in[3]: 30 31 32 33
     // to:
-    // a0:    00 10 02 12
-    // a1:    20 30 22 32
-    // a2:    01 11 03 13
-    // a3:    21 31 23 33
-    let a0 = _mm256_unpacklo_epi64(v0.0, v0.1);
-    let a1 = _mm256_unpacklo_epi64(v0.2, v0.3);
-    let a2 = _mm256_unpackhi_epi64(v0.0, v0.1);
-    let a3 = _mm256_unpackhi_epi64(v0.2, v0.3);
+    // a0:    00 10 01 11
+    // a1:    20 30 21 31
+    // a2:    02 12 03 13
+    // a3:    22 32 23 33
+
+    let a0 = _mm_unpacklo_ps(v0.0, v0.1);
+    let a1 = _mm_unpacklo_ps(v0.2, v0.3);
+    let a2 = _mm_unpackhi_ps(v0.0, v0.1);
+    let a3 = _mm_unpackhi_ps(v0.2, v0.3);
 
     // Unpack 64 bit elements resulting in:
     // out[0]: 00 10 20 30
     // out[1]: 01 11 21 31
     // out[2]: 02 12 22 32
     // out[3]: 03 13 23 33
-    let o0 = _mm256_inserti128_si256::<1>(a0, _mm256_castsi256_si128(a1));
-    let o1 = _mm256_inserti128_si256::<1>(a2, _mm256_castsi256_si128(a3));
-    let o2 = _mm256_inserti128_si256::<0>(a1, _mm256_extracti128_si256::<1>(a0));
-    let o3 = _mm256_inserti128_si256::<0>(a3, _mm256_extracti128_si256::<1>(a2));
+    let r0 = _mm_castpd_ps(_mm_unpacklo_pd(_mm_castps_pd(a0), _mm_castps_pd(a1)));
+    let r1 = _mm_castpd_ps(_mm_unpackhi_pd(_mm_castps_pd(a0), _mm_castps_pd(a1)));
+    let r2 = _mm_castpd_ps(_mm_unpacklo_pd(_mm_castps_pd(a2), _mm_castps_pd(a3)));
+    let r3 = _mm_castpd_ps(_mm_unpackhi_pd(_mm_castps_pd(a2), _mm_castps_pd(a3)));
 
     if FLIP {
-        const S: i32 = _mm_shuffle(0, 1, 2, 3);
+        let rsh = _mm_setr_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
         (
-            _mm256_permute4x64_epi64::<S>(o0),
-            _mm256_permute4x64_epi64::<S>(o1),
-            _mm256_permute4x64_epi64::<S>(o2),
-            _mm256_permute4x64_epi64::<S>(o3),
+            _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(r0), rsh)),
+            _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(r1), rsh)),
+            _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(r2), rsh)),
+            _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(r3), rsh)),
         )
     } else {
-        (o0, o1, o2, o3)
+        (r0, r1, r2, r3)
     }
 }
 
 #[inline]
-pub(crate) fn avx2_transpose_u16x4_4x4<const FLOP: bool, const FLIP: bool>(
-    src: &[u16],
+#[target_feature(enable = "ssse3")]
+pub(crate) unsafe fn sse_transpose_4x4_f32<const FLOP: bool, const FLIP: bool>(
+    src: &[f32],
     src_stride: usize,
-    dst: &mut [u16],
+    dst: &mut [f32],
     dst_stride: usize,
 ) {
     unsafe {
-        let row0 = _mm256_loadu_si256(src.get_unchecked(0..).as_ptr() as *const _);
-        let row1 = _mm256_loadu_si256(src.get_unchecked(src_stride..).as_ptr() as *const _);
-        let row2 = _mm256_loadu_si256(src.get_unchecked(2 * src_stride..).as_ptr() as *const _);
-        let row3 = _mm256_loadu_si256(src.get_unchecked(3 * src_stride..).as_ptr() as *const _);
+        let row0 = _mm_loadu_ps(src.get_unchecked(0..).as_ptr() as *const _);
+        let row1 = _mm_loadu_ps(src.get_unchecked(src_stride..).as_ptr() as *const _);
+        let row2 = _mm_loadu_ps(src.get_unchecked(2 * src_stride..).as_ptr() as *const _);
+        let row3 = _mm_loadu_ps(src.get_unchecked(3 * src_stride..).as_ptr() as *const _);
 
-        let v0 = avx_transpose_u64_4x4_impl::<FLIP>((row0, row1, row2, row3));
+        let v0 = sse_transpose_4x4_impl_f32::<FLIP>((row0, row1, row2, row3));
 
         if FLOP {
-            _mm256_storeu_si256(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.0);
-            _mm256_storeu_si256(
+            _mm_storeu_ps(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.0);
+            _mm_storeu_ps(
                 dst.get_unchecked_mut(dst_stride..).as_mut_ptr() as *mut _,
                 v0.1,
             );
-            _mm256_storeu_si256(
+            _mm_storeu_ps(
                 dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr() as *mut _,
                 v0.2,
             );
-            _mm256_storeu_si256(
+            _mm_storeu_ps(
                 dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr() as *mut _,
                 v0.3,
             );
         } else {
-            _mm256_storeu_si256(
+            _mm_storeu_ps(
                 dst.get_unchecked_mut(3 * dst_stride..).as_mut_ptr() as *mut _,
                 v0.0,
             );
-            _mm256_storeu_si256(
+            _mm_storeu_ps(
                 dst.get_unchecked_mut(2 * dst_stride..).as_mut_ptr() as *mut _,
                 v0.1,
             );
-            _mm256_storeu_si256(
+            _mm_storeu_ps(
                 dst.get_unchecked_mut(dst_stride..).as_mut_ptr() as *mut _,
                 v0.2,
             );
-            _mm256_storeu_si256(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.3);
+            _mm_storeu_ps(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.3);
         }
     }
 }

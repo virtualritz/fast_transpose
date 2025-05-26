@@ -27,8 +27,9 @@
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #![forbid(unsafe_code)]
+use crate::float32_invoker::prepare_f32_plane_executor;
 use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
-use crate::{transpose_arbitrary, FlipMode, FlopMode, TransposeError};
+use crate::{FlipMode, FlopMode, TransposeError};
 
 /// Performs plane image transposition
 ///
@@ -55,16 +56,8 @@ pub fn transpose_plane_f32(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
-    transpose_arbitrary(
-        input,
-        input_stride,
-        output,
-        output_stride,
-        width,
-        height,
-        flip_mode,
-        flop_mode,
-    )
+    let executor = prepare_f32_plane_executor(flip_mode, flop_mode);
+    executor.execute(input, input_stride, output, output_stride, width, height)
 }
 
 /// Performs plane with alpha image transposition

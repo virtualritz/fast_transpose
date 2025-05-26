@@ -26,26 +26,56 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod u16_4x4;
-mod u16_8x8;
-mod u16x4_2x2;
-mod u8_8x8;
-mod u8x2_4x4;
-mod u8x2_8x8;
-mod utils;
-mod x4_f32;
-mod x4_u32;
-mod x8_f32;
-mod x8_u32;
 
-pub(crate) use u16_4x4::sse_transpose_4x4_u16;
-pub(crate) use u16_8x8::sse_transpose_8x8_u16;
-pub(crate) use u16x4_2x2::ssse_transpose_u16x4_2x2;
-pub(crate) use u8_8x8::sse_transpose_u8_8x8;
-pub(crate) use u8x2_4x4::sse_transpose_u8x2_4x4;
-pub(crate) use u8x2_8x8::sse_transpose_u8x2_8x8;
-pub(crate) use utils::_mm_shuffle;
-pub(crate) use x4_f32::sse_transpose_4x4_f32;
-pub(crate) use x4_u32::sse_transpose_4x4_u32x1;
-pub(crate) use x8_f32::sse_transpose_8x8_f32;
-pub(crate) use x8_u32::sse_transpose_8x8_u32x1;
+#![no_main]
+
+use fast_transpose::{transpose_plane_f32, FlipMode, FlopMode};
+use libfuzzer_sys::fuzz_target;
+
+fuzz_target!(|data: (u16, u16)| {
+    let width = data.0 as usize;
+    let height = data.1 as usize;
+    if width > 512 || height > 512 {
+        return;
+    }
+    if width == 0 || height == 0 {
+        return;
+    }
+    let src_data = vec![0f32; width * height];
+    let mut dst_data = vec![0f32; width * height];
+    transpose_plane_f32(
+        &src_data,
+        width,
+        &mut dst_data,
+        height,
+        width,
+        height,
+        FlipMode::NoFlip,
+        FlopMode::NoFlop,
+    )
+    .unwrap();
+
+    transpose_plane_f32(
+        &src_data,
+        width,
+        &mut dst_data,
+        height,
+        width,
+        height,
+        FlipMode::Flip,
+        FlopMode::NoFlop,
+    )
+    .unwrap();
+
+    transpose_plane_f32(
+        &src_data,
+        width,
+        &mut dst_data,
+        height,
+        width,
+        height,
+        FlipMode::Flip,
+        FlopMode::Flop,
+    )
+    .unwrap();
+});
