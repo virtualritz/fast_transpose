@@ -26,12 +26,38 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod f32x2_4x4;
-mod u16x4_4x4;
-mod x8_f32;
-mod x8_u32;
 
-pub(crate) use f32x2_4x4::avx2_transpose_f32x2_4x4;
-pub(crate) use u16x4_4x4::avx2_transpose_u16x4_4x4;
-pub(crate) use x8_f32::avx_transpose_8x8_f32;
-pub(crate) use x8_u32::avx_transpose_8x8_u32;
+use crate::sse::u16x4_2x2::sse_transpose_u64_2x2_impl;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
+
+#[inline]
+pub(crate) fn ssse_transpose_f32x2_2x2<const FLOP: bool, const FLIP: bool>(
+    src: &[f32],
+    src_stride: usize,
+    dst: &mut [f32],
+    dst_stride: usize,
+) {
+    unsafe {
+        let row0 = _mm_loadu_si128(src.get_unchecked(0..).as_ptr() as *const _);
+        let row1 = _mm_loadu_si128(src.get_unchecked(src_stride..).as_ptr() as *const _);
+
+        let v0 = sse_transpose_u64_2x2_impl::<FLIP>((row0, row1));
+
+        if FLOP {
+            _mm_storeu_si128(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.0);
+            _mm_storeu_si128(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr() as *mut _,
+                v0.1,
+            );
+        } else {
+            _mm_storeu_si128(
+                dst.get_unchecked_mut(dst_stride..).as_mut_ptr() as *mut _,
+                v0.0,
+            );
+            _mm_storeu_si128(dst.get_unchecked_mut(0..).as_mut_ptr() as *mut _, v0.1);
+        }
+    }
+}

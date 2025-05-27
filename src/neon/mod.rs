@@ -26,6 +26,8 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+mod f32x2_2x2;
+mod f32x2_4x4;
 mod u16_4x4;
 mod u16_8x8;
 mod u16x4_2x2;
@@ -40,6 +42,8 @@ mod x4_u32;
 mod x8_f32;
 mod x8_u32;
 
+pub(crate) use f32x2_2x2::neon_transpose_f32x2_2x2;
+pub(crate) use f32x2_4x4::neon_transpose_f32x2_4x4;
 pub(crate) use u16_4x4::neon_transpose_4x4_u16;
 pub(crate) use u16_8x8::neon_transpose_8x8_u16;
 pub(crate) use u16x4_2x2::neon_transpose_u16x4_2x2;

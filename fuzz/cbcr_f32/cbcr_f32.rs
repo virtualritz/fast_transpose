@@ -26,12 +26,56 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod f32x2_4x4;
-mod u16x4_4x4;
-mod x8_f32;
-mod x8_u32;
 
-pub(crate) use f32x2_4x4::avx2_transpose_f32x2_4x4;
-pub(crate) use u16x4_4x4::avx2_transpose_u16x4_4x4;
-pub(crate) use x8_f32::avx_transpose_8x8_f32;
-pub(crate) use x8_u32::avx_transpose_8x8_u32;
+#![no_main]
+
+use fast_transpose::{transpose_plane_f32_with_alpha, transpose_plane_with_alpha, FlipMode, FlopMode};
+use libfuzzer_sys::fuzz_target;
+
+fuzz_target!(|data: (u16, u16)| {
+    let width = data.0 as usize;
+    let height = data.1 as usize;
+    if width > 512 || height > 512 {
+        return;
+    }
+    if width == 0 || height == 0 {
+        return;
+    }
+    let src_data = vec![0.; width * height * 2];
+    let mut dst_data = vec![0.; width * height * 2];
+    transpose_plane_f32_with_alpha(
+        &src_data,
+        width * 2,
+        &mut dst_data,
+        height * 2,
+        width,
+        height,
+        FlipMode::NoFlip,
+        FlopMode::NoFlop,
+    )
+    .unwrap();
+
+    transpose_plane_f32_with_alpha(
+        &src_data,
+        width * 2,
+        &mut dst_data,
+        height * 2,
+        width,
+        height,
+        FlipMode::Flip,
+        FlopMode::NoFlop,
+    )
+    .unwrap();
+
+    transpose_plane_f32_with_alpha(
+        &src_data,
+        width * 2,
+        &mut dst_data,
+        height * 2,
+        width,
+        height,
+        FlipMode::Flip,
+        FlopMode::Flop,
+    )
+    .unwrap();
+});

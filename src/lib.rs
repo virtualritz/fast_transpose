@@ -59,6 +59,7 @@ mod avx;
 mod avx512;
 mod cbcr8;
 mod flip;
+mod float32_cbcr_invoker;
 mod float32_invoker;
 mod float_32;
 mod flop;

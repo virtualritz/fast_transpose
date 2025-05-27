@@ -28,8 +28,9 @@
  */
 use fast_transpose::{
     flip_arbitrary, flip_rgb, flop_arbitrary, flop_rgb, rotate180_rgb, transpose_arbitrary,
-    transpose_plane, transpose_plane16, transpose_plane_f32, transpose_plane_with_alpha,
-    transpose_rgb, transpose_rgba, transpose_rgba16, FlipMode, FlopMode,
+    transpose_plane, transpose_plane16, transpose_plane_f32, transpose_plane_f32_with_alpha,
+    transpose_plane_with_alpha, transpose_rgb, transpose_rgba, transpose_rgba16, FlipMode,
+    FlopMode,
 };
 use image::{ColorType, DynamicImage, GenericImageView, ImageReader};
 use std::time::Instant;
@@ -61,10 +62,10 @@ fn main() {
     //     .map(|&x| x as f32 / 255.0)
     //     .collect::<Vec<_>>();
 
-    let mut transposed = vec![0u8; dimensions.0 as usize * dimensions.1 as usize * components];
+    let mut transposed = vec![0.; dimensions.0 as usize * dimensions.1 as usize * 2];
     let mut transposed_rgb = vec![[0u8; 3]; dimensions.0 as usize * dimensions.1 as usize];
 
-    let rgba_bytes = img.to_rgba8();
+    let rgba_bytes = img.to_luma_alpha32f();
 
     let rgb_set = img
         .as_bytes()
@@ -95,17 +96,33 @@ fn main() {
     // )
     // .unwrap();
 
-    transpose_rgba(
-        &rgba_bytes,
-        dimensions.0 as usize * 4,
-        &mut transposed,
-        dimensions.1 as usize * 4,
-        dimensions.0 as usize,
-        dimensions.1 as usize,
-        FlipMode::NoFlip,
-        FlopMode::Flop,
-    )
-    .unwrap();
+    for i in 0..10 {
+        let start = Instant::now();
+        transpose_plane_f32_with_alpha(
+            &rgba_bytes,
+            dimensions.0 as usize * 2,
+            &mut transposed,
+            dimensions.1 as usize * 2,
+            dimensions.0 as usize,
+            dimensions.1 as usize,
+            FlipMode::NoFlip,
+            FlopMode::Flop,
+        )
+        .unwrap();
+        println!("Exec time {:?}", start.elapsed());
+    }
+
+    // transpose_rgba(
+    //     &rgba_bytes,
+    //     dimensions.0 as usize * 4,
+    //     &mut transposed,
+    //     dimensions.1 as usize * 4,
+    //     dimensions.0 as usize,
+    //     dimensions.1 as usize,
+    //     FlipMode::NoFlip,
+    //     FlopMode::Flop,
+    // )
+    // .unwrap();
 
     // transpose_rgba(
     //     &rgb_bytes,
@@ -137,27 +154,26 @@ fn main() {
     // )
     // .unwrap();
 
-    if components == 3 {
-        image::save_buffer(
-            "transposed.jpg",
-            &transposed,
-            dimensions.1,
-            dimensions.0,
-            image::ExtendedColorType::Rgb8,
-        )
-        .unwrap();
-    } else {
-        image::save_buffer(
-            "transposed.png",
-            &transposed,
-            dimensions.1,
-            dimensions.0,
-            if components == 3 {
-                image::ExtendedColorType::Rgb8
-            } else {
-                image::ExtendedColorType::Rgba8
-            },
-        )
-        .unwrap();
-    }
+    // if components == 3 {
+    //     image::save_buffer(
+    //         "transposed.jpg",
+    //         &transposed,
+    //         dimensions.1,
+    //         dimensions.0,
+    //         image::ExtendedColorType::Rgb8,
+    //     )
+    //     .unwrap();
+    // } else {
+    image::save_buffer(
+        "transposed.png",
+        &transposed
+            .iter()
+            .map(|&x| (x * 255.0).round() as u8)
+            .collect::<Vec<u8>>(),
+        dimensions.1,
+        dimensions.0,
+        image::ExtendedColorType::La8,
+    )
+    .unwrap();
+    // }
 }

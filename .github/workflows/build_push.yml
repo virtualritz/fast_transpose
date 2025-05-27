@@ -70,6 +70,7 @@ jobs:
       - run: cargo fuzz run rgba16 --no-default-features --features neon -- -max_total_time=15
       - run: cargo fuzz run plane16 --no-default-features --features neon -- -max_total_time=15
       - run: cargo fuzz run plane_f32 --no-default-features --features neon -- -max_total_time=15
+      - run: cargo fuzz run cbcr_f32 --no-default-features --features neon -- -max_total_time=15
 
   fuzz_x86:
     name: Fuzzing x86
@@ -87,3 +88,4 @@ jobs:
       - run: cargo fuzz run rgba16 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
       - run: cargo fuzz run plane16 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
       - run: cargo fuzz run plane_f32 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15
+      - run: cargo fuzz run cbcr_f32 --no-default-features --features ${{ matrix.feature }} -- -max_total_time=15

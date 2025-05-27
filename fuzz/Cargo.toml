@@ -60,3 +60,10 @@ path = "plane_f32/plane_f32.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "cbcr_f32"
+path = "cbcr_f32/cbcr_f32.rs"
+test = false
+doc = false
+bench = false
