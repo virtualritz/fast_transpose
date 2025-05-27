@@ -26,12 +26,52 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-mod f32x2_4x4;
-mod u16x4_4x4;
-mod x8_f32;
-mod x8_u32;
 
-pub(crate) use f32x2_4x4::avx2_transpose_f32x2_4x4;
-pub(crate) use u16x4_4x4::avx2_transpose_u16x4_4x4;
-pub(crate) use x8_f32::avx_transpose_8x8_f32;
-pub(crate) use x8_u32::avx_transpose_8x8_u32;
+use crate::neon::utils::vrev128q_f64;
+use std::arch::aarch64::*;
+
+#[inline(always)]
+pub(crate) unsafe fn neon_transpose_f32x2_2x2_impl<const FLIP: bool>(
+    v0: float32x4x2_t,
+) -> float32x4x2_t {
+    let l = vreinterpretq_f32_f64(vtrn1q_f64(
+        vreinterpretq_f64_f32(v0.0),
+        vreinterpretq_f64_f32(v0.1),
+    ));
+    let h = vreinterpretq_f32_f64(vtrn2q_f64(
+        vreinterpretq_f64_f32(v0.0),
+        vreinterpretq_f64_f32(v0.1),
+    ));
+
+    if FLIP {
+        float32x4x2_t(
+            vreinterpretq_f32_f64(vrev128q_f64(vreinterpretq_f64_f32(l))),
+            vreinterpretq_f32_f64(vrev128q_f64(vreinterpretq_f64_f32(h))),
+        )
+    } else {
+        float32x4x2_t(l, h)
+    }
+}
+
+#[inline]
+pub(crate) fn neon_transpose_f32x2_2x2<const FLOP: bool, const FLIP: bool>(
+    src: &[f32],
+    src_stride: usize,
+    dst: &mut [f32],
+    dst_stride: usize,
+) {
+    unsafe {
+        let row0 = vld1q_f32(src.get_unchecked(0..).as_ptr());
+        let row1 = vld1q_f32(src.get_unchecked(src_stride..).as_ptr());
+
+        let v0 = neon_transpose_f32x2_2x2_impl::<FLIP>(float32x4x2_t(row0, row1));
+
+        if FLOP {
+            vst1q_f32(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.0);
+            vst1q_f32(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.1);
+        } else {
+            vst1q_f32(dst.get_unchecked_mut(dst_stride..).as_mut_ptr(), v0.0);
+            vst1q_f32(dst.get_unchecked_mut(0..).as_mut_ptr(), v0.1);
+        }
+    }
+}

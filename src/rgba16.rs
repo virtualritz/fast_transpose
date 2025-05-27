@@ -86,7 +86,7 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<u16>
     #[inline(always)]
     fn transpose_block(&self, src: &[u16], src_stride: usize, dst: &mut [u16], dst_stride: usize) {
         use crate::avx::avx2_transpose_u16x4_4x4;
-        avx2_transpose_u16x4_4x4::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+        unsafe { avx2_transpose_u16x4_4x4::<FLOP, FLIP>(src, src_stride, dst, dst_stride) }
     }
 }
 

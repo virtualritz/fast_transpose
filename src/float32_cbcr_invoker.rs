@@ -26,33 +26,23 @@
  * // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+use crate::float32_invoker::TransposeExecutor;
 #[allow(unused_imports)]
 use crate::rgba8::*;
-use crate::{transpose_arbitrary, FlipMode, FlopMode, TransposeError};
+use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
+use crate::{FlipMode, FlopMode, TransposeError};
 use std::marker::PhantomData;
-
-pub(crate) trait TransposeExecutor<F> {
-    fn execute(
-        &self,
-        input: &[F],
-        input_stride: usize,
-        output: &mut [F],
-        output_stride: usize,
-        width: usize,
-        height: usize,
-    ) -> Result<(), TransposeError>;
-}
 
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
-struct DefaultExecutor<F> {
+struct DefaultCbCrExecutor<F> {
     flip_mode: FlipMode,
     flop_mode: FlopMode,
     _phantom: PhantomData<F>,
 }
 
 #[allow(dead_code)]
-impl<F: Copy> TransposeExecutor<F> for DefaultExecutor<F> {
+impl<F: Copy> TransposeExecutor<F> for DefaultCbCrExecutor<F> {
     fn execute(
         &self,
         input: &[F],
@@ -62,7 +52,7 @@ impl<F: Copy> TransposeExecutor<F> for DefaultExecutor<F> {
         width: usize,
         height: usize,
     ) -> Result<(), TransposeError> {
-        transpose_arbitrary(
+        transpose_arbitrary_grouped::<F, 2>(
             input,
             input_stride,
             output,
@@ -76,30 +66,66 @@ impl<F: Copy> TransposeExecutor<F> for DefaultExecutor<F> {
 }
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
-struct TransposeBlockNeon4x4F32<const FLOP: bool, const FLIP: bool> {}
+struct TransposeBlockNeon4x4F32x2<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
-    for TransposeBlockNeon4x4F32<FLOP, FLIP>
+    for TransposeBlockNeon4x4F32x2<FLOP, FLIP>
 {
     #[inline(always)]
     fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
-        use crate::neon::neon_transpose_4x4_f32;
-        neon_transpose_4x4_f32::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+        use crate::neon::neon_transpose_f32x2_4x4;
+        neon_transpose_f32x2_4x4::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
     }
 }
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
-struct TransposeBlockNeon8x8F32<const FLOP: bool, const FLIP: bool> {}
+struct TransposeBlockNeon2x2F32x2<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
 impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
-    for TransposeBlockNeon8x8F32<FLOP, FLIP>
+    for TransposeBlockNeon2x2F32x2<FLOP, FLIP>
 {
     #[inline(always)]
     fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
-        use crate::neon::neon_transpose_8x8_f32;
-        neon_transpose_8x8_f32::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+        use crate::neon::neon_transpose_f32x2_2x2;
+        neon_transpose_f32x2_2x2::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+    }
+}
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
+struct TransposeBlockSse2x2F32x2<const FLOP: bool, const FLIP: bool> {}
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
+    for TransposeBlockSse2x2F32x2<FLOP, FLIP>
+{
+    #[inline(always)]
+    fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
+        use crate::sse::ssse_transpose_f32x2_2x2;
+        ssse_transpose_f32x2_2x2::<FLOP, FLIP>(src, src_stride, dst, dst_stride);
+    }
+}
+
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
+struct TransposeBlockAvx4x4F32x2<const FLOP: bool, const FLIP: bool> {}
+
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
+impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
+    for TransposeBlockAvx4x4F32x2<FLOP, FLIP>
+{
+    #[inline(always)]
+    fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
+        use crate::avx::avx2_transpose_f32x2_4x4;
+        unsafe { avx2_transpose_f32x2_4x4::<FLOP, FLIP>(src, src_stride, dst, dst_stride) }
     }
 }
 
@@ -124,126 +150,6 @@ pub(crate) fn make_neon_default_executor(
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeExecutor<f32>
-    for NeonDefaultExecutor<FLOP, FLIP>
-{
-    fn execute(
-        &self,
-        input: &[f32],
-        input_stride: usize,
-        output: &mut [f32],
-        output_stride: usize,
-        width: usize,
-        height: usize,
-    ) -> Result<(), TransposeError> {
-        if input.len() != input_stride * height {
-            return Err(TransposeError::MismatchDimensions);
-        }
-        if output.len() != output_stride * width {
-            return Err(TransposeError::MismatchDimensions);
-        }
-        if input_stride < width {
-            return Err(TransposeError::MismatchDimensions);
-        }
-        if output_stride < height {
-            return Err(TransposeError::MismatchDimensions);
-        }
-
-        let mut y = 0usize;
-
-        y = transpose_executor::<f32, 8, 1, FLOP, FLIP>(
-            input,
-            input_stride,
-            output,
-            output_stride,
-            width,
-            height,
-            y,
-            TransposeBlockNeon8x8F32::<FLOP, FLIP> {},
-        );
-
-        y = transpose_executor::<f32, 4, 1, FLOP, FLIP>(
-            input,
-            input_stride,
-            output,
-            output_stride,
-            width,
-            height,
-            y,
-            TransposeBlockNeon4x4F32::<FLOP, FLIP> {},
-        );
-
-        transpose_section::<f32, 1, FLOP, FLIP>(
-            input,
-            input_stride,
-            output,
-            output_stride,
-            width,
-            height,
-            y,
-        );
-
-        Ok(())
-    }
-}
-
-#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
-struct TransposeBlockAvx28x8<const FLOP: bool, const FLIP: bool> {}
-
-#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32> for TransposeBlockAvx28x8<FLOP, FLIP> {
-    #[inline(always)]
-    fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
-        use crate::avx::avx_transpose_8x8_f32;
-        unsafe { avx_transpose_8x8_f32::<FLOP, FLIP>(src, src_stride, dst, dst_stride) }
-    }
-}
-
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "unsafe",
-    feature = "sse"
-))]
-struct TransposeBlockSSSE38x8<const FLOP: bool, const FLIP: bool> {}
-
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "unsafe",
-    feature = "sse"
-))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
-    for TransposeBlockSSSE38x8<FLOP, FLIP>
-{
-    #[inline(always)]
-    fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
-        use crate::sse::sse_transpose_8x8_f32;
-        unsafe { sse_transpose_8x8_f32::<FLOP, FLIP>(src, src_stride, dst, dst_stride) }
-    }
-}
-
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "unsafe",
-    feature = "sse"
-))]
-struct TransposeBlockSSSE34x4<const FLOP: bool, const FLIP: bool> {}
-
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "unsafe",
-    feature = "sse"
-))]
-impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
-    for TransposeBlockSSSE34x4<FLOP, FLIP>
-{
-    #[inline(always)]
-    fn transpose_block(&self, src: &[f32], src_stride: usize, dst: &mut [f32], dst_stride: usize) {
-        use crate::sse::sse_transpose_4x4_f32;
-        unsafe { sse_transpose_4x4_f32::<FLOP, FLIP>(src, src_stride, dst, dst_stride) }
-    }
-}
-
 #[cfg(all(
     any(target_arch = "x86", target_arch = "x86_64"),
     feature = "unsafe",
@@ -251,30 +157,6 @@ impl<const FLOP: bool, const FLIP: bool> TransposeBlock<f32>
 ))]
 #[derive(Copy, Clone, Default)]
 struct Ssse3DefaultExecutor<const FLOP: bool, const FLIP: bool> {}
-
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    feature = "unsafe",
-    feature = "sse"
-))]
-fn make_ssse3_default_executor(
-    flip_mode: FlipMode,
-    flop_mode: FlopMode,
-) -> Option<Box<dyn TransposeExecutor<f32>>> {
-    if std::arch::is_x86_feature_detected!("ssse3") {
-        return Some(match flip_mode {
-            FlipMode::NoFlip => match flop_mode {
-                FlopMode::NoFlop => Box::new(Ssse3DefaultExecutor::<false, false>::default()),
-                FlopMode::Flop => Box::new(Ssse3DefaultExecutor::<true, false>::default()),
-            },
-            FlipMode::Flip => match flop_mode {
-                FlopMode::NoFlop => Box::new(Ssse3DefaultExecutor::<false, true>::default()),
-                FlopMode::Flop => Box::new(Ssse3DefaultExecutor::<true, true>::default()),
-            },
-        });
-    }
-    None
-}
 
 #[cfg(all(
     any(target_arch = "x86", target_arch = "x86_64"),
@@ -298,16 +180,16 @@ impl<const FLOP: bool, const FLIP: bool> Ssse3DefaultExecutor<FLOP, FLIP> {
         if output.len() != output_stride * width {
             return Err(TransposeError::MismatchDimensions);
         }
-        if input_stride < width {
+        if input_stride < width * 2 {
             return Err(TransposeError::MismatchDimensions);
         }
-        if output_stride < height {
+        if output_stride < height * 2 {
             return Err(TransposeError::MismatchDimensions);
         }
 
         let mut y = 0usize;
 
-        y = transpose_executor::<f32, 8, 1, FLOP, FLIP>(
+        y = transpose_executor::<f32, 2, 2, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -315,21 +197,10 @@ impl<const FLOP: bool, const FLIP: bool> Ssse3DefaultExecutor<FLOP, FLIP> {
             width,
             height,
             y,
-            TransposeBlockSSSE38x8::<FLOP, FLIP> {},
+            TransposeBlockSse2x2F32x2::<FLOP, FLIP> {},
         );
 
-        y = transpose_executor::<f32, 4, 1, FLOP, FLIP>(
-            input,
-            input_stride,
-            output,
-            output_stride,
-            width,
-            height,
-            y,
-            TransposeBlockSSSE34x4::<FLOP, FLIP> {},
-        );
-
-        transpose_section::<f32, 1, FLOP, FLIP>(
+        transpose_section::<f32, 2, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -364,32 +235,16 @@ impl<const FLOP: bool, const FLIP: bool> TransposeExecutor<f32>
     }
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "avx"
+))]
 #[derive(Copy, Clone, Default)]
-struct Avx2DefaultExecutor<const FLOP: bool, const FLIP: bool> {}
+struct AvxDefaultExecutor<const FLOP: bool, const FLIP: bool> {}
 
 #[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
-pub(crate) fn make_avx2_default_executor(
-    flip_mode: FlipMode,
-    flop_mode: FlopMode,
-) -> Option<Box<dyn TransposeExecutor<f32>>> {
-    if std::arch::is_x86_feature_detected!("avx2") {
-        return Some(match flip_mode {
-            FlipMode::NoFlip => match flop_mode {
-                FlopMode::NoFlop => Box::new(Avx2DefaultExecutor::<false, false>::default()),
-                FlopMode::Flop => Box::new(Avx2DefaultExecutor::<true, false>::default()),
-            },
-            FlipMode::Flip => match flop_mode {
-                FlopMode::NoFlop => Box::new(Avx2DefaultExecutor::<false, true>::default()),
-                FlopMode::Flop => Box::new(Avx2DefaultExecutor::<true, true>::default()),
-            },
-        });
-    }
-    None
-}
-
-#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
-impl<const FLOP: bool, const FLIP: bool> Avx2DefaultExecutor<FLOP, FLIP> {
+impl<const FLOP: bool, const FLIP: bool> AvxDefaultExecutor<FLOP, FLIP> {
     #[target_feature(enable = "avx2")]
     unsafe fn execute_impl(
         &self,
@@ -406,16 +261,16 @@ impl<const FLOP: bool, const FLIP: bool> Avx2DefaultExecutor<FLOP, FLIP> {
         if output.len() != output_stride * width {
             return Err(TransposeError::MismatchDimensions);
         }
-        if input_stride < width {
+        if input_stride < width * 2 {
             return Err(TransposeError::MismatchDimensions);
         }
-        if output_stride < height {
+        if output_stride < height * 2 {
             return Err(TransposeError::MismatchDimensions);
         }
 
         let mut y = 0usize;
 
-        y = transpose_executor::<f32, 8, 1, FLOP, FLIP>(
+        y = transpose_executor::<f32, 4, 2, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -423,10 +278,10 @@ impl<const FLOP: bool, const FLIP: bool> Avx2DefaultExecutor<FLOP, FLIP> {
             width,
             height,
             y,
-            TransposeBlockAvx28x8::<FLOP, FLIP> {},
+            TransposeBlockAvx4x4F32x2::<FLOP, FLIP> {},
         );
 
-        y = transpose_executor::<f32, 4, 1, FLOP, FLIP>(
+        y = transpose_executor::<f32, 2, 2, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -434,10 +289,10 @@ impl<const FLOP: bool, const FLIP: bool> Avx2DefaultExecutor<FLOP, FLIP> {
             width,
             height,
             y,
-            TransposeBlockSSSE34x4::<FLOP, FLIP> {},
+            TransposeBlockSse2x2F32x2::<FLOP, FLIP> {},
         );
 
-        transpose_section::<f32, 1, FLOP, FLIP>(
+        transpose_section::<f32, 2, FLOP, FLIP>(
             input,
             input_stride,
             output,
@@ -452,9 +307,7 @@ impl<const FLOP: bool, const FLIP: bool> Avx2DefaultExecutor<FLOP, FLIP> {
 }
 
 #[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
-impl<const FLOP: bool, const FLIP: bool> TransposeExecutor<f32>
-    for Avx2DefaultExecutor<FLOP, FLIP>
-{
+impl<const FLOP: bool, const FLIP: bool> TransposeExecutor<f32> for AvxDefaultExecutor<FLOP, FLIP> {
     fn execute(
         &self,
         input: &[f32],
@@ -468,14 +321,124 @@ impl<const FLOP: bool, const FLIP: bool> TransposeExecutor<f32>
     }
 }
 
-pub(crate) fn prepare_f32_plane_executor(
+#[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
+impl<const FLOP: bool, const FLIP: bool> TransposeExecutor<f32>
+    for NeonDefaultExecutor<FLOP, FLIP>
+{
+    fn execute(
+        &self,
+        input: &[f32],
+        input_stride: usize,
+        output: &mut [f32],
+        output_stride: usize,
+        width: usize,
+        height: usize,
+    ) -> Result<(), TransposeError> {
+        if input.len() != input_stride * height {
+            return Err(TransposeError::MismatchDimensions);
+        }
+        if output.len() != output_stride * width {
+            return Err(TransposeError::MismatchDimensions);
+        }
+        if input_stride < width * 2 {
+            return Err(TransposeError::MismatchDimensions);
+        }
+        if output_stride < height * 2 {
+            return Err(TransposeError::MismatchDimensions);
+        }
+
+        let mut y = 0usize;
+
+        y = transpose_executor::<f32, 4, 2, FLOP, FLIP>(
+            input,
+            input_stride,
+            output,
+            output_stride,
+            width,
+            height,
+            y,
+            TransposeBlockNeon4x4F32x2::<FLOP, FLIP> {},
+        );
+
+        y = transpose_executor::<f32, 2, 2, FLOP, FLIP>(
+            input,
+            input_stride,
+            output,
+            output_stride,
+            width,
+            height,
+            y,
+            TransposeBlockNeon2x2F32x2::<FLOP, FLIP> {},
+        );
+
+        transpose_section::<f32, 2, FLOP, FLIP>(
+            input,
+            input_stride,
+            output,
+            output_stride,
+            width,
+            height,
+            y,
+        );
+
+        Ok(())
+    }
+}
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    feature = "unsafe",
+    feature = "sse"
+))]
+fn make_ssse3_default_executor(
+    flip_mode: FlipMode,
+    flop_mode: FlopMode,
+) -> Option<Box<dyn TransposeExecutor<f32>>> {
+    if std::arch::is_x86_feature_detected!("ssse3") {
+        return Some(match flip_mode {
+            FlipMode::NoFlip => match flop_mode {
+                FlopMode::NoFlop => Box::new(Ssse3DefaultExecutor::<false, false>::default()),
+                FlopMode::Flop => Box::new(Ssse3DefaultExecutor::<true, false>::default()),
+            },
+            FlipMode::Flip => match flop_mode {
+                FlopMode::NoFlop => Box::new(Ssse3DefaultExecutor::<false, true>::default()),
+                FlopMode::Flop => Box::new(Ssse3DefaultExecutor::<true, true>::default()),
+            },
+        });
+    }
+    None
+}
+
+#[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
+fn make_avx2_default_executor(
+    flip_mode: FlipMode,
+    flop_mode: FlopMode,
+) -> Option<Box<dyn TransposeExecutor<f32>>> {
+    if std::arch::is_x86_feature_detected!("avx2") {
+        return Some(match flip_mode {
+            FlipMode::NoFlip => match flop_mode {
+                FlopMode::NoFlop => Box::new(AvxDefaultExecutor::<false, false>::default()),
+                FlopMode::Flop => Box::new(AvxDefaultExecutor::<true, false>::default()),
+            },
+            FlipMode::Flip => match flop_mode {
+                FlopMode::NoFlop => Box::new(AvxDefaultExecutor::<false, true>::default()),
+                FlopMode::Flop => Box::new(AvxDefaultExecutor::<true, true>::default()),
+            },
+        });
+    }
+    None
+}
+
+pub(crate) fn prepare_f32_cbcr_executor(
     flip_mode: FlipMode,
     flop_mode: FlopMode,
 ) -> Box<dyn TransposeExecutor<f32>> {
     #[cfg(all(target_arch = "x86_64", feature = "unsafe", feature = "avx"))]
     {
-        if let Some(executor) = make_avx2_default_executor(flip_mode, flop_mode) {
-            return executor;
+        if std::arch::is_x86_feature_detected!("avx2") {
+            if let Some(executor) = make_avx2_default_executor(flip_mode, flop_mode) {
+                return executor;
+            }
         }
     }
     #[cfg(all(
@@ -484,8 +447,10 @@ pub(crate) fn prepare_f32_plane_executor(
         feature = "sse"
     ))]
     {
-        if let Some(executor) = make_ssse3_default_executor(flip_mode, flop_mode) {
-            return executor;
+        if std::arch::is_x86_feature_detected!("ssse3") {
+            if let Some(executor) = make_ssse3_default_executor(flip_mode, flop_mode) {
+                return executor;
+            }
         }
     }
     #[cfg(all(target_arch = "aarch64", feature = "unsafe", feature = "neon"))]
@@ -494,7 +459,7 @@ pub(crate) fn prepare_f32_plane_executor(
     }
     #[cfg(not(all(target_arch = "aarch64", feature = "unsafe", feature = "neon")))]
     {
-        Box::new(DefaultExecutor {
+        Box::new(DefaultCbCrExecutor {
             flip_mode,
             flop_mode,
             _phantom: PhantomData,

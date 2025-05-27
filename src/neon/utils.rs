@@ -52,6 +52,11 @@ pub(crate) unsafe fn vrev128q_u64(a: uint64x2_t) -> uint64x2_t {
 }
 
 #[inline(always)]
+pub(crate) unsafe fn vrev128q_f64(a: float64x2_t) -> float64x2_t {
+    vcombine_f64(vget_high_f64(a), vget_low_f64(a))
+}
+
+#[inline(always)]
 pub(crate) unsafe fn vrev128_u8(a: uint8x16_t) -> uint8x16_t {
     let rev = vrev64q_u8(a);
     vcombine_u8(vget_high_u8(rev), vget_low_u8(rev))
