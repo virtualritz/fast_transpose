@@ -32,30 +32,34 @@ use crate::plane16::transpose_plane16_chunked;
 use crate::rgba16::transpose_rgba16_chunked;
 use crate::transpose_arbitrary_group::transpose_arbitrary_grouped;
 use crate::{FlipMode, FlopMode, TransposeError};
+use roxygen::roxygen;
 
-/// Performs plane image transposition
+/// Transposes a single-channel 16-bit image.
 ///
-/// # Arguments
+/// This function performs matrix transposition on single-channel 16-bit image data,
+/// effectively rotating the image by 90 degrees clockwise. Additional flip
+/// and flop operations can be combined for other rotation angles.
 ///
-/// * `input`: Input data
-/// * `input_stride`: Input data stride
-/// * `output`: Output data
-/// * `output_stride`: Output data stride
-/// * `width`: Image width
-/// * `height`: Image height
-/// * `flip_mode`: see [FlipMode]
-/// * `flop_mode`: see [FlopMode]
+/// # Performance
 ///
-/// returns: Result<(), TransposeError>
-///
+/// Uses SIMD-optimized chunked processing for maximum throughput on supported architectures.
+#[roxygen]
 pub fn transpose_plane16(
+    /// Source image data as a flat array of 16-bit pixels.
     input: &[u16],
+    /// Number of u16 elements per row in the input (width for packed data).
     input_stride: usize,
+    /// Destination buffer for transposed image data.
     output: &mut [u16],
+    /// Number of u16 elements per row in the output (height for packed data).
     output_stride: usize,
+    /// Width of the input image in pixels.
     width: usize,
+    /// Height of the input image in pixels.
     height: usize,
+    /// Horizontal mirroring mode for rotation control.
     flip_mode: FlipMode,
+    /// Vertical mirroring mode for rotation control.
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
     transpose_plane16_chunked(
@@ -70,29 +74,31 @@ pub fn transpose_plane16(
     )
 }
 
-/// Performs plane with alpha image transposition
+/// Transposes a two-channel 16-bit image (grayscale with alpha).
 ///
-/// # Arguments
+/// This function performs matrix transposition on two-channel 16-bit image data,
+/// keeping the channel pairs together during the transformation.
 ///
-/// * `input`: Input data
-/// * `input_stride`: Input data stride
-/// * `output`: Output data
-/// * `output_stride`: Output data stride
-/// * `width`: Image width
-/// * `height`: Image height
-/// * `flip_mode`: see [FlipMode]
-/// * `flop_mode`: see [FlopMode]
+/// # Performance
 ///
-/// returns: Result<(), TransposeError>
-///
+/// Optimized for paired channel processing with SIMD instructions.
+#[roxygen]
 pub fn transpose_plane16_with_alpha(
+    /// Source image data as a flat array of channel pairs.
     input: &[u16],
+    /// Number of u16 elements per row in the input (width * 2 for packed data).
     input_stride: usize,
+    /// Destination buffer for transposed image data.
     output: &mut [u16],
+    /// Number of u16 elements per row in the output (height * 2 for packed data).
     output_stride: usize,
+    /// Width of the input image in pixels.
     width: usize,
+    /// Height of the input image in pixels.
     height: usize,
+    /// Horizontal mirroring mode for rotation control.
     flip_mode: FlipMode,
+    /// Vertical mirroring mode for rotation control.
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
     transpose_arbitrary_grouped::<u16, 2>(
@@ -107,29 +113,32 @@ pub fn transpose_plane16_with_alpha(
     )
 }
 
-/// Performs RGB image transposition
+/// Transposes a 16-bit RGB image.
 ///
-/// # Arguments
+/// This function performs matrix transposition on three-channel 16-bit RGB image data,
+/// keeping the color triplets together during the transformation.
 ///
-/// * `input`: Input data
-/// * `input_stride`: Input data stride
-/// * `output`: Output data
-/// * `output_stride`: Output data stride
-/// * `width`: Image width
-/// * `height`: Image height
-/// * `flip_mode`: see [FlipMode]
-/// * `flop_mode`: see [FlopMode]
+/// # Performance
 ///
-/// returns: Result<(), TransposeError>
-///
+/// Uses specialized 3-channel SIMD kernels where available, falling back to
+/// grouped arbitrary channel processing for compatibility.
+#[roxygen]
 pub fn transpose_rgb16(
+    /// Source RGB image data as a flat array (R0,G0,B0,R1,G1,B1,...).
     input: &[u16],
+    /// Number of u16 elements per row in the input (width * 3 for packed data).
     input_stride: usize,
+    /// Destination buffer for transposed RGB data.
     output: &mut [u16],
+    /// Number of u16 elements per row in the output (height * 3 for packed data).
     output_stride: usize,
+    /// Width of the input image in pixels.
     width: usize,
+    /// Height of the input image in pixels.
     height: usize,
+    /// Horizontal mirroring mode for rotation control.
     flip_mode: FlipMode,
+    /// Vertical mirroring mode for rotation control.
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
     transpose_arbitrary_grouped::<u16, 3>(
@@ -144,29 +153,32 @@ pub fn transpose_rgb16(
     )
 }
 
-/// Performs RGBA image transposition
+/// Transposes a 16-bit RGBA image.
 ///
-/// # Arguments
+/// This function performs matrix transposition on four-channel 16-bit RGBA image data,
+/// keeping the color quadruplets together during the transformation.
 ///
-/// * `input`: Input data
-/// * `input_stride`: Input data stride
-/// * `output`: Output data
-/// * `output_stride`: Output data stride
-/// * `width`: Image width
-/// * `height`: Image height
-/// * `flip_mode`: see [FlipMode]
-/// * `flop_mode`: see [FlopMode]
+/// # Performance
 ///
-/// returns: Result<(), TransposeError>
-///
+/// Highly optimized with SIMD instructions for 4-channel data on all supported architectures.
+/// This is typically the fastest transpose operation due to power-of-2 channel alignment.
+#[roxygen]
 pub fn transpose_rgba16(
+    /// Source RGBA image data as a flat array (R0,G0,B0,A0,R1,G1,B1,A1,...).
     input: &[u16],
+    /// Number of u16 elements per row in the input (width * 4 for packed data).
     input_stride: usize,
+    /// Destination buffer for transposed RGBA data.
     output: &mut [u16],
+    /// Number of u16 elements per row in the output (height * 4 for packed data).
     output_stride: usize,
+    /// Width of the input image in pixels.
     width: usize,
+    /// Height of the input image in pixels.
     height: usize,
+    /// Horizontal mirroring mode for rotation control.
     flip_mode: FlipMode,
+    /// Vertical mirroring mode for rotation control.
     flop_mode: FlopMode,
 ) -> Result<(), TransposeError> {
     transpose_rgba16_chunked(

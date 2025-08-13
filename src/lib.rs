@@ -1,3 +1,41 @@
+//! # Fast Image Transpose
+//!
+//! High-performance image transposition library with SIMD acceleration for multiple CPU architectures.
+//! Supports flipping, flopping, and rotation operations on images with various pixel formats.
+//!
+//! ## Features
+//!
+//! - **Fast transposition**: Optimized algorithms for 90°, 180°, and 270° rotations
+//! - **Multiple data types**: Support for 8-bit, 16-bit, and 32-bit float pixels
+//! - **Arbitrary channels**: Works with grayscale, RGB, RGBA, and custom channel counts
+//! - **SIMD optimizations**: Architecture-specific implementations for x86 (SSE/AVX) and ARM (NEON)
+//! - **In-place operations**: Memory-efficient transformations where possible
+//! - **Safe mode**: Optional pure-Rust implementation without unsafe code
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use fast_transpose::{transpose_rgb, FlipMode, FlopMode};
+//!
+//! let width = 100;
+//! let height = 200;
+//! let input = vec![0u8; width * height * 3];
+//! let mut output = vec![0u8; height * width * 3];
+//!
+//! // Transpose (90° clockwise rotation) without additional flipping
+//! transpose_rgb(
+//!     &input,
+//!     width * 3,  // input_stride
+//!     &mut output,
+//!     height * 3, // output_stride  
+//!     width,
+//!     height,
+//!     FlipMode::NoFlip,
+//!     FlopMode::NoFlop,
+//! ).unwrap();
+//! ```
+//!
+#![doc = document_features::document_features!()]
 /*
  * // Copyright (c) Radzivon Bartoshyk. All rights reserved.
  * //
@@ -101,6 +139,7 @@ pub use rotate180::{
     rotate180_rgb16, rotate180_rgb_f32, rotate180_rgba, rotate180_rgba16, rotate180_rgba_f32,
 };
 pub use transpose_arbitrary::transpose_arbitrary;
+pub use transpose_arbitrary_group::transpose_arbitrary_grouped;
 pub use unsigned_16::{
     transpose_plane16, transpose_plane16_with_alpha, transpose_rgb16, transpose_rgba16,
 };

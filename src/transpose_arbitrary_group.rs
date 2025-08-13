@@ -277,8 +277,54 @@ fn trs_arb_grouped<V: Copy, const N: usize, const FLOP: bool, const FLIP: bool>(
 ///
 /// returns: Result<(), TransposeError>
 ///
+/// Transposes an image with arbitrary channel count.
+///
+/// This function performs matrix transposition on grouped pixel data where each pixel
+/// consists of N channels. It supports simultaneous flipping and flopping operations
+/// for efficient 90/180/270 degree rotations.
+///
+/// # Arguments
+///
+/// * `input` - Source image data as a flat array of channel values.
+/// * `input_stride` - Number of elements per row in the input (width * N for packed data).
+/// * `output` - Destination buffer for transposed image data.
+/// * `output_stride` - Number of elements per row in the output (height * N for packed data).
+/// * `width` - Width of the input image in pixels.
+/// * `height` - Height of the input image in pixels.
+/// * `flip_mode` - Horizontal mirroring option (see [`FlipMode`]).
+/// * `flop_mode` - Vertical mirroring option (see [`FlopMode`]).
+///
+/// # Returns
+///
+/// * `Ok(())` - Operation completed successfully.
+/// * `Err(TransposeError::MismatchDimensions)` - Buffer sizes don't match specified dimensions.
+///
+/// # Performance
+///
+/// This function uses cache-friendly block processing for optimal performance with
+/// arbitrary channel counts. For common channel counts (1-4), consider using the
+/// specialized functions like `transpose_rgb`, `transpose_rgba`, etc. for better
+/// SIMD optimization.
+///
+/// # Example
+///
+/// ```ignore
+/// // Transpose a 5-channel image
+/// let input = vec![0u8; width * height * 5];
+/// let mut output = vec![0u8; height * width * 5];
+/// transpose_arbitrary_grouped::<u8, 5>(
+///     &input,
+///     width * 5,
+///     &mut output,
+///     height * 5,
+///     width,
+///     height,
+///     FlipMode::NoFlip,
+///     FlopMode::NoFlop,
+/// )?;
+/// ```
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn transpose_arbitrary_grouped<V: Copy, const N: usize>(
+pub fn transpose_arbitrary_grouped<V: Copy, const N: usize>(
     input: &[V],
     input_stride: usize,
     output: &mut [V],

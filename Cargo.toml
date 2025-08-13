@@ -17,7 +17,9 @@ exclude = ["*.jpg", "assets/*"]
 rust-version = "1.82.0"
 
 [dependencies]
-bytemuck = "1.19.0"
+bytemuck = "1"
+roxygen = "1"
+document-features = "0.2"
 
 [features]
 default = ["unsafe", "sse", "avx", "neon"]
